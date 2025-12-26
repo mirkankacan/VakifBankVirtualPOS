@@ -1,9 +1,9 @@
-namespace VakifBankVirtualPOS.WebAPI.Dtos
+namespace VakifBankVirtualPOS.WebAPI.Dtos.ClientDtos
 {
     /// <summary>
     /// Müşteri yanıt DTO
     /// </summary>
-    public class ClientResponseDto
+    public class ClientDto
     {
         public int ID { get; set; }
         public string CARI_KOD { get; set; }
@@ -20,4 +20,3 @@ namespace VakifBankVirtualPOS.WebAPI.Dtos
         public string? SUBE_CARI_KOD { get; set; }
     }
 }
-

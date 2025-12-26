@@ -1,4 +1,4 @@
-﻿namespace VakifBankVirtualPOS.WebAPI.Dtos
+﻿namespace VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos
 {
     /// <summary>
     /// 3D Secure Enrollment (Kart Kayıt Kontrolü) Cevap DTO

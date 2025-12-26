@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VakifBankVirtualPOS.WebAPI.Dtos
+namespace VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos
 {
     public class PaymentInitiateRequestDto
     {

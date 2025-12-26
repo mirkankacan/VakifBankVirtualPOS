@@ -1,6 +1,6 @@
 ﻿using Carter;
 using Microsoft.AspNetCore.Mvc;
-using VakifBankVirtualPOS.WebAPI.Dtos;
+using VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos;
 using VakifBankVirtualPOS.WebAPI.Extensions;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
@@ -40,19 +40,6 @@ namespace VakifBankPayment.WebAPI.Endpoints
             .WithName("ThreeDCallback")
             .WithSummary("3D Secure doğrulama sonrası callback")
             .DisableAntiforgery();
-
-            // Health check
-            group.MapGet("/health", () =>
-            {
-                return Results.Ok(new
-                {
-                    status = "healthy",
-                    service = "VakifBankPayment",
-                    timestamp = DateTime.Now
-                });
-            })
-            .WithName("PaymentHealthCheck")
-            .WithSummary("Ödeme servisi sağlık kontrolü");
         }
     }
 }

@@ -1,23 +1,23 @@
-﻿using System.Xml;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
-using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
-namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
+namespace VakifBankVirtualPOS.WebAPI.Helpers
 {
     /// <summary>
-    /// XML işlemleri servisi
+    /// XML işlemleri helper sınıfı
     /// </summary>
-    public class XmlService : IXmlService
+    public static class XmlHelper
     {
         /// <summary>
-        /// Object'i XML string'e serialize eder
+        /// Object'i XML string'e serialize eder (null değerleri atlar)
         /// </summary>
-        public string SerializeToXml<T>(T obj) where T : class
+        public static string SerializeToXml<T>(T obj) where T : class
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
 
+            // XmlSerializer ile serialize et
             var xmlSerializer = new XmlSerializer(typeof(T));
             using var stringWriter = new StringWriter();
             using var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
@@ -27,14 +27,37 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 Encoding = System.Text.Encoding.UTF8
             });
 
-            xmlSerializer.Serialize(xmlWriter, obj);
-            return stringWriter.ToString();
+            // Null namespace ile serialize et
+            var namespaces = new XmlSerializerNamespaces();
+            namespaces.Add(string.Empty, string.Empty);
+
+            xmlSerializer.Serialize(xmlWriter, obj, namespaces);
+
+            var xmlString = stringWriter.ToString();
+
+            // Boş elementleri kaldır
+            return RemoveEmptyElements(xmlString);
+        }
+
+        /// <summary>
+        /// XML'den boş elementleri kaldırır
+        /// </summary>
+        private static string RemoveEmptyElements(string xmlString)
+        {
+            var xdoc = XDocument.Parse(xmlString);
+
+            // Boş veya sadece whitespace içeren elementleri bul ve kaldır
+            xdoc.Descendants()
+                .Where(e => string.IsNullOrWhiteSpace(e.Value) && !e.HasElements)
+                .Remove();
+
+            return xdoc.ToString(SaveOptions.DisableFormatting);
         }
 
         /// <summary>
         /// XML string'i object'e deserialize eder
         /// </summary>
-        public T DeserializeFromXml<T>(string xmlString) where T : class
+        public static T DeserializeFromXml<T>(string xmlString) where T : class
         {
             if (string.IsNullOrWhiteSpace(xmlString))
                 throw new ArgumentException("XML string boş olamaz", nameof(xmlString));
@@ -47,11 +70,10 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
         /// <summary>
         /// XML string'den belirli bir elementi okur
         /// </summary>
-        public string GetElementValue(string xmlString, string elementName)
+        public static string GetElementValue(string xmlString, string elementName)
         {
             if (string.IsNullOrWhiteSpace(xmlString))
                 throw new ArgumentException("XML string boş olamaz", nameof(xmlString));
-
             if (string.IsNullOrWhiteSpace(elementName))
                 throw new ArgumentException("Element adı boş olamaz", nameof(elementName));
 
@@ -70,7 +92,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
         /// <summary>
         /// XML string'in geçerli olup olmadığını kontrol eder
         /// </summary>
-        public bool IsValidXml(string xmlString)
+        public static bool IsValidXml(string xmlString)
         {
             if (string.IsNullOrWhiteSpace(xmlString))
                 return false;
@@ -87,3 +109,4 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
         }
     }
 }
+

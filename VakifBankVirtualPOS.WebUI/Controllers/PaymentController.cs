@@ -22,33 +22,27 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         }
 
         /// <summary>
-        /// Ödeme başlatma sayfası
+        /// Test ödeme sayfası
         /// </summary>
         [HttpGet]
         public IActionResult Index()
         {
-            return View(new PaymentInitiateViewModel());
+            return View();
         }
 
         /// <summary>
-        /// Test endpoint'ine istek atar
+        /// Test endpoint'ine istek atar ve sonucu gösterir
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Initiate(PaymentInitiateViewModel model)
+        public async Task<IActionResult> Initiate()
         {
-            if (!ModelState.IsValid)
-            {
-                return View("Index", model);
-            }
-
             try
             {
                 var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5272";
                 var httpClient = _httpClientFactory.CreateClient();
 
-                _logger.LogInformation("Test endpoint'ine istek atılıyor. Tutar: {Amount}, Cari Kod: {ClientCode}",
-                    model.Amount, model.ClientCode);
+                _logger.LogInformation("Test endpoint'ine istek atılıyor...");
 
                 // Test endpoint'ine POST isteği (body olmadan - endpoint hardcoded değerler kullanıyor)
                 var response = await httpClient.PostAsync($"{apiBaseUrl}/api/tests/initiate", null);
@@ -60,24 +54,112 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
                     _logger.LogError("Test endpoint hatası. Status: {Status}, Error: {Error}",
                         response.StatusCode, responseContent);
 
-                    ViewBag.Error = $"Hata: {response.StatusCode} - {responseContent}";
-                    ViewBag.Response = responseContent;
-                    return View("TestResult");
+                    TempData["Error"] = $"Hata: {response.StatusCode} - {responseContent}";
+                    TempData["Response"] = responseContent;
+                    return RedirectToAction("TestResult");
                 }
 
                 _logger.LogInformation("Test endpoint başarılı. Response: {Response}", responseContent);
 
-                ViewBag.Success = true;
-                ViewBag.Response = responseContent;
-                return View("TestResult");
+                // Response'u parse et
+                var enrollmentResponse = JsonSerializer.Deserialize<EnrollmentResponse>(responseContent,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (enrollmentResponse == null)
+                {
+                    TempData["Error"] = "Response parse edilemedi";
+                    TempData["Response"] = responseContent;
+                    return RedirectToAction("TestResult");
+                }
+
+                // Status ne olursa olsun 3D Secure sayfasına yönlendir
+                _logger.LogInformation("3D Secure başlatılıyor. OrderId: {OrderId}, Status: {Status}",
+                    enrollmentResponse.OrderId, enrollmentResponse.Status);
+
+                // Eğer değerler null ise message'dan parse etmeyi dene
+                var acsUrl = enrollmentResponse.ACSUrl;
+                var termUrl = enrollmentResponse.TermUrl;
+
+                if (string.IsNullOrEmpty(acsUrl) && !string.IsNullOrEmpty(enrollmentResponse.Message))
+                {
+                    // Message içinden URL'leri bul
+                    var message = enrollmentResponse.Message;
+                    var urlPattern = @"https?://[^\s]+";
+                    var urls = System.Text.RegularExpressions.Regex.Matches(message, urlPattern);
+
+                    if (urls.Count > 0)
+                    {
+                        acsUrl = urls[0].Value;
+                        _logger.LogInformation("ACS URL message'dan parse edildi: {Url}", acsUrl);
+                    }
+
+                    if (urls.Count > 1)
+                    {
+                        termUrl = urls[1].Value;
+                        _logger.LogInformation("Term URL message'dan parse edildi: {Url}", termUrl);
+                    }
+                }
+
+                TempData["ACSUrl"] = acsUrl;
+                TempData["PAReq"] = enrollmentResponse.PAReq;
+                TempData["TermUrl"] = termUrl ?? _configuration["VakifBankOptions:SuccessUrl"] ?? $"{Request.Scheme}://{Request.Host}/Payment/Callback";
+                TempData["MD"] = enrollmentResponse.MD;
+                TempData["OrderId"] = enrollmentResponse.OrderId;
+                TempData["Status"] = enrollmentResponse.Status;
+                TempData["Message"] = enrollmentResponse.Message;
+
+                return RedirectToAction("ThreeDSecure");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Test endpoint isteği hatası");
-                ViewBag.Error = $"Bir hata oluştu: {ex.Message}";
-                ViewBag.Response = ex.ToString();
-                return View("TestResult");
+                TempData["Error"] = $"Bir hata oluştu: {ex.Message}";
+                TempData["Response"] = ex.ToString();
+                return RedirectToAction("TestResult");
             }
+        }
+
+        /// <summary>
+        /// 3D Secure yönlendirme sayfası
+        /// </summary>
+        [HttpGet]
+        public IActionResult ThreeDSecure()
+        {
+            ViewBag.ACSUrl = TempData["ACSUrl"];
+            ViewBag.PAReq = TempData["PAReq"];
+            ViewBag.TermUrl = TempData["TermUrl"];
+            ViewBag.MD = TempData["MD"];
+            ViewBag.OrderId = TempData["OrderId"];
+
+            return View();
+        }
+
+        /// <summary>
+        /// Status mesajını döndürür
+        /// </summary>
+        private string GetStatusMessage(string status)
+        {
+            return status switch
+            {
+                "Y" => "Kart 3D Secure programına kayıtlı - Doğrulama yapılabilir",
+                "N" => "Kart 3D Secure programına kayıtlı değil",
+                "U" => "3D Secure doğrulama yapılamadı",
+                "E" => "3D Secure doğrulama hatası",
+                "A" => "Kart 3D Secure için kayıtlı ancak şifre doğrulaması yapılamadı (Half Secure)",
+                _ => $"Bilinmeyen durum: {status}"
+            };
+        }
+
+        /// <summary>
+        /// Test sonuç sayfası
+        /// </summary>
+        [HttpGet]
+        public IActionResult TestResult()
+        {
+            ViewBag.Success = TempData["Success"];
+            ViewBag.Error = TempData["Error"];
+            ViewBag.Response = TempData["Response"];
+            return View();
         }
 
         /// <summary>
@@ -198,6 +280,7 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
             public string OrderId { get; set; } = string.Empty;
             public string Status { get; set; } = string.Empty;
             public string Message { get; set; } = string.Empty;
+            public string MessageErrorCode { get; set; } = string.Empty;
             public string ACSUrl { get; set; } = string.Empty;
             public string PAReq { get; set; } = string.Empty;
             public string TermUrl { get; set; } = string.Empty;

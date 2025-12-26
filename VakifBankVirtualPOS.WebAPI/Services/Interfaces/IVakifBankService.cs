@@ -1,5 +1,5 @@
 ﻿using VakifBankVirtualPOS.WebAPI.Common;
-using VakifBankVirtualPOS.WebAPI.Dtos;
+using VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos;
 
 namespace VakifBankVirtualPOS.WebAPI.Services.Interfaces
 {

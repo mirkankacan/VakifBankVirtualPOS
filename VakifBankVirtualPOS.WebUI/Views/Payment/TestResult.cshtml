@@ -1,19 +1,26 @@
 @{
     ViewData["Title"] = "Test Sonucu";
+    var hasError = ViewBag.Error != null;
+    var status = ViewBag.Status as string;
+    var statusMessage = ViewBag.StatusMessage as string;
 }
 
 <div class="row justify-content-center">
     <div class="col-md-10">
         <div class="card shadow">
-            <div class="card-header @(ViewBag.Success == true ? "bg-success" : "bg-danger") text-white">
+            <div class="card-header @(hasError ? "bg-danger" : status == "Y" ? "bg-success" : "bg-warning") text-white">
                 <h3 class="card-title mb-0">
-                    @if (ViewBag.Success == true)
+                    @if (hasError)
                     {
-                        <text>✓ Test Başarılı</text>
+                        <text>✗ Test Başarısız</text>
+                    }
+                    else if (status == "Y")
+                    {
+                        <text>✓ 3D Secure Hazır</text>
                     }
                     else
                     {
-                        <text>✗ Test Başarısız</text>
+                        <text>⚠ 3D Secure Yapılamıyor</text>
                     }
                 </h3>
             </div>
@@ -25,11 +32,41 @@
                     </div>
                 }
 
+                @if (status != null)
+                {
+                    <div class="alert @(status == "Y" ? "alert-success" : "alert-warning")" role="alert">
+                        <h5 class="alert-heading">Durum: @status</h5>
+                        <p class="mb-0"><strong>@statusMessage</strong></p>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(ViewBag.OrderId as string))
+                    {
+                        <div class="mb-3">
+                            <strong>Sipariş No:</strong> @ViewBag.OrderId
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(ViewBag.Message as string))
+                    {
+                        <div class="mb-3">
+                            <strong>Mesaj:</strong> @ViewBag.Message
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(ViewBag.MessageErrorCode as string))
+                    {
+                        <div class="mb-3">
+                            <strong>Hata Kodu:</strong> @ViewBag.MessageErrorCode
+                        </div>
+                    }
+                }
+
                 @if (ViewBag.Response != null)
                 {
                     <div class="mb-3">
-                        <h5>API Yanıtı:</h5>
-                        <pre class="bg-light p-3 rounded" style="max-height: 500px; overflow-y: auto;"><code>@ViewBag.Response</code></pre>
+                        <h5>API Yanıtı (JSON):</h5>
+                        <pre class="bg-light p-3 rounded"
+                            style="max-height: 500px; overflow-y: auto;"><code>@ViewBag.Response</code></pre>
                     </div>
                 }
 
@@ -45,4 +82,3 @@
         </div>
     </div>
 </div>
-

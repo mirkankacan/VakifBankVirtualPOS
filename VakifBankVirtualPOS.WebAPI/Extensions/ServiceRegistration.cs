@@ -1,4 +1,5 @@
 ﻿using Carter;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -65,7 +66,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     connectionString: connectionString,
                     sinkOptions: new MSSqlServerSinkOptions
                     {
-                        TableName = "IDT_VAKIFBANK_ODEME_LOGS",
+                        TableName = "IDT_EGESEHIR_ETAHSILAT_LOGS",
                         SchemaName = "dbo",
                         AutoCreateSqlTable = true,
                         BatchPostingLimit = 500,
@@ -75,12 +76,12 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     columnOptions: GetColumnOptions())
                 .WriteTo.Email(
                     from: emailOptions.Credentials.Username,
-                    to: string.Join(";", emailOptions.ErrorTos), // Array'i ; ile birleştir
+                    to: emailOptions.ErrorTo,
                     host: emailOptions.Host,
                     port: emailOptions.Port,
                     connectionSecurity: emailOptions.EnableSsl
-                        ? MailKit.Security.SecureSocketOptions.StartTls
-                        : MailKit.Security.SecureSocketOptions.SslOnConnect,
+                        ? MailKit.Security.SecureSocketOptions.SslOnConnect
+                        : MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable,
                     credentials: new NetworkCredential(
                         emailOptions.Credentials.Username,
                         emailOptions.Credentials.Password
@@ -126,18 +127,21 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 //    }
                 //});
             });
+            services.AddMapster();
+            var config = TypeAdapterConfig.GlobalSettings;
+            config.Scan(typeof(WebAPIAssembly).Assembly);
 
             services.AddCarter();
             services.AddEndpointsApiExplorer();
 
             services.AddDistributedMemoryCache();
 
+            services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IClientRepository, ClientRepository>();
-            services.AddScoped<IVakifBankService, VakifBankService>();
             services.AddScoped<IClientService, ClientService>();
-            services.AddScoped<IHttpClientService, HttpClientService>();
-            services.AddSingleton<IXmlService, XmlService>();
+            services.AddScoped<IVakifBankService, VakifBankService>();
+            services.AddScoped<IHybsService, HybsService>();
             return services;
         }
 

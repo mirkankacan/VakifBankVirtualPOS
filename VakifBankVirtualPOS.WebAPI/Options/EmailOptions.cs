@@ -23,7 +23,7 @@ namespace VakifBankVirtualPOS.WebAPI.Options
         public string[] RequiredBccs { get; set; } = Array.Empty<string>();
 
         [Required]
-        public string[] ErrorTos { get; set; } = default!;
+        public string ErrorTo { get; set; } = default!;
     }
 
     public class EmailCredentials

@@ -53,8 +53,7 @@ namespace VakifBankVirtualPOS.WebAPI.Repositories.Implementations
         {
             try
             {
-                return await _context.IDT_VAKIFBANK_ODEME
-                    .FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
+                return await _context.IDT_VAKIFBANK_ODEME.AsNoTracking().FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -77,7 +76,7 @@ namespace VakifBankVirtualPOS.WebAPI.Repositories.Implementations
         {
             try
             {
-                var payment = await GetByOrderIdAsync(orderId, cancellationToken);
+                var payment = await _context.IDT_VAKIFBANK_ODEME.FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
 
                 if (payment == null)
                 {

@@ -1,6 +1,6 @@
 ﻿using Carter;
 using Microsoft.AspNetCore.Mvc;
-using VakifBankVirtualPOS.WebAPI.Dtos;
+using VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos;
 using VakifBankVirtualPOS.WebAPI.Extensions;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
@@ -24,11 +24,11 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 var request = new PaymentInitiateRequestDto();
                 request.DocumentNo = "3009-2025";
                 request.ClientCode = "123456";
-                request.ExpiryDate = "2411";
+                request.ExpiryDate = "11/24";
                 request.Amount = 1000;
-                request.CardNumber = "4938460158754205";
+                request.CardNumber = "6501700161161969";
                 request.CardHolderName = "Mirkan Kaçan";
-                request.Cvv = "715";
+                request.Cvv = "390";
                 var result = await paymentService.InitiateThreeDSecureAsync(request, cancellationToken);
                 return result.ToGenericResult();
             })

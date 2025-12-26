@@ -1,6 +1,5 @@
 ﻿using Carter;
 using Microsoft.AspNetCore.Mvc;
-using VakifBankVirtualPOS.WebAPI.Dtos;
 using VakifBankVirtualPOS.WebAPI.Extensions;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
@@ -16,17 +15,26 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
             var group = app.MapGroup("api/clients")
                 .WithTags("Clients");
 
-            // Müşteri oluşturma
-            group.MapPost("/", async (
-                [FromBody] CreateClientRequestDto request,
+            group.MapGet("/check/{no}", async (
+                string no,
                 [FromServices] IClientService clientService,
                 CancellationToken cancellationToken) =>
             {
-                var result = await clientService.CreateClientAsync(request, cancellationToken);
+                var result = await clientService.CheckByNoAsync(no, cancellationToken);
                 return result.ToGenericResult();
             })
-            .WithName("CreateClient")
-            .WithSummary("Yeni müşteri oluşturur");
+            .WithName("CheckClientByNo")
+            .WithSummary("Vergi veya TC numarasına göre cari kontrol eder varsa getirir yoksa oluşturur");
+
+            group.MapGet("/transaction/document-no/{documentNo}", async (
+             string documentNo,
+             [FromServices] IClientService clientService,
+             CancellationToken cancellationToken) =>
+            {
+                var result = await clientService.GetTransactionsByDocumentAsync(documentNo, cancellationToken);
+                return result.ToGenericResult();
+            })
+         .WithName("GetTransactionsByDocument");
 
             // Vergi numarasına göre müşteri getirme
             group.MapGet("/tax-number/{taxNumber}", async (
@@ -38,7 +46,7 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("GetClientByTaxNumber")
-            .WithSummary("Vergi numarasına göre müşteri getirir");
+            .WithSummary("Vergi numarasına göre cari getirir");
 
             // TC kimlik numarasına göre müşteri getirme
             group.MapGet("/tc-number/{tcNumber}", async (
@@ -50,20 +58,19 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("GetClientByTcNumber")
-            .WithSummary("TC kimlik numarasına göre müşteri getirir");
+            .WithSummary("TC kimlik numarasına göre cari getirir");
 
-            // Health check
-            group.MapGet("/health", () =>
+            // Cari koduna göre müşteri getirme
+            group.MapGet("/code/{clientCode}", async (
+                string clientCode,
+                [FromServices] IClientService clientService,
+                CancellationToken cancellationToken) =>
             {
-                return Results.Ok(new
-                {
-                    status = "healthy",
-                    service = "ClientService",
-                    timestamp = DateTime.Now
-                });
+                var result = await clientService.GetByCodeAsync(clientCode, cancellationToken);
+                return result.ToGenericResult();
             })
-            .WithName("ClientHealthCheck")
-            .WithSummary("Müşteri servisi sağlık kontrolü");
+            .WithName("GetClientByCode")
+            .WithSummary("Cari koduna göre cari getirir");
         }
     }
 }

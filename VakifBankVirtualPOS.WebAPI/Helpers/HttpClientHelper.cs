@@ -1,24 +1,22 @@
-﻿using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
-
-namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
+namespace VakifBankVirtualPOS.WebAPI.Helpers
 {
     /// <summary>
-    /// HTTP istek servisi
+    /// HTTP istek helper sınıfı
     /// </summary>
-    public class HttpClientService : IHttpClientService
+    public static class HttpClientHelper
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-
-        public HttpClientService(IHttpClientFactory httpClientFactory)
-        {
-            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-        }
-
         /// <summary>
         /// Form data ile POST isteği gönderir
         /// </summary>
-        public async Task<string> PostFormDataAsync(string url, Dictionary<string, string> formData, CancellationToken cancellationToken)
+        public static async Task<string> PostFormDataAsync(
+            IHttpClientFactory httpClientFactory,
+            string url,
+            Dictionary<string, string> formData,
+            CancellationToken cancellationToken = default)
         {
+            if (httpClientFactory == null)
+                throw new ArgumentNullException(nameof(httpClientFactory));
+
             if (string.IsNullOrWhiteSpace(url))
                 throw new ArgumentException("URL boş olamaz", nameof(url));
 
@@ -27,7 +25,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
 
             try
             {
-                var httpClient = _httpClientFactory.CreateClient();
+                var httpClient = httpClientFactory.CreateClient();
                 var content = new FormUrlEncodedContent(formData);
 
                 var response = await httpClient.PostAsync(url, content, cancellationToken);
@@ -44,8 +42,15 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
         /// <summary>
         /// XML string ile POST isteği gönderir (prmstr parametresi ile)
         /// </summary>
-        public async Task<string> PostXmlAsync(string url, string xmlContent, CancellationToken cancellationToken)
+        public static async Task<string> PostXmlAsync(
+            IHttpClientFactory httpClientFactory,
+            string url,
+            string xmlContent,
+            CancellationToken cancellationToken = default)
         {
+            if (httpClientFactory == null)
+                throw new ArgumentNullException(nameof(httpClientFactory));
+
             if (string.IsNullOrWhiteSpace(url))
                 throw new ArgumentException("URL boş olamaz", nameof(url));
 
@@ -54,7 +59,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
 
             try
             {
-                var httpClient = _httpClientFactory.CreateClient();
+                var httpClient = httpClientFactory.CreateClient();
 
                 // VakıfBank'ın beklediği format: prmstr parametresi
                 var formData = new Dictionary<string, string>
@@ -76,3 +81,4 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
         }
     }
 }
+

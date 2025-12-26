@@ -1,4 +1,4 @@
-﻿namespace VakifBankVirtualPOS.WebAPI.Dtos
+﻿namespace VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos
 {
     /// <summary>
     /// Ödeme İşlemi Sonuç DTO

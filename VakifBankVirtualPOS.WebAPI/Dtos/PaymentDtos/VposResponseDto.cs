@@ -1,6 +1,6 @@
 ﻿using System.Xml.Serialization;
 
-namespace VakifBankVirtualPOS.WebAPI.Dtos
+namespace VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos
 {
     /// <summary>
     /// Sanal POS Provizyon Cevap DTO (XML)
