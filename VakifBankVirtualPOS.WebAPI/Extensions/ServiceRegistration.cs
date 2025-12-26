@@ -1,0 +1,166 @@
+﻿using Carter;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Net;
+using VakifBankPayment.Services.Implementations;
+using VakifBankVirtualPOS.WebAPI.Data.Context;
+using VakifBankVirtualPOS.WebAPI.Middlewares;
+using VakifBankVirtualPOS.WebAPI.Options;
+using VakifBankVirtualPOS.WebAPI.Repositories.Implementations;
+using VakifBankVirtualPOS.WebAPI.Repositories.Interfaces;
+using VakifBankVirtualPOS.WebAPI.Services.Implementations;
+using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
+
+namespace VakifBankVirtualPOS.WebAPI.Extensions
+{
+    public static class ServiceRegistration
+    {
+        public static IServiceCollection AddWebApiServices(this IServiceCollection services, IConfiguration configuration, IHostBuilder host)
+        {
+            var connectionString = configuration.GetConnectionString("SqlConnection");
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            var emailOptions = configuration.GetSection("EmailOptions").Get<EmailOptions>()!;
+            services.AddScoped<GlobalExceptionMiddleware>();
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(connectionString));
+
+            services.AddHttpClient();
+            services.AddHttpContextAccessor();
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("Application", "EgesehirVakifBankVirtualPOS.WebAPI")
+                .Enrich.WithProperty("Environment", environment)
+                .Enrich.WithClientIp()
+                .Enrich.WithMachineName()
+                .Enrich.WithThreadId()
+                .WriteTo.Logger(lc =>
+                {
+                    if (environment == "Development")
+                    {
+                        lc.WriteTo.Console(
+                            restrictedToMinimumLevel: LogEventLevel.Debug,
+                            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+                    }
+                })
+                .WriteTo.File("logs/api-.log",
+                    restrictedToMinimumLevel: LogEventLevel.Information,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30,
+                    fileSizeLimitBytes: 10_000_000,
+                    rollOnFileSizeLimit: true,
+                    shared: true,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+                .WriteTo.MSSqlServer(
+                    connectionString: connectionString,
+                    sinkOptions: new MSSqlServerSinkOptions
+                    {
+                        TableName = "IDT_VAKIFBANK_ODEME_LOGS",
+                        SchemaName = "dbo",
+                        AutoCreateSqlTable = true,
+                        BatchPostingLimit = 500,
+                        BatchPeriod = TimeSpan.FromSeconds(15)
+                    },
+                    restrictedToMinimumLevel: LogEventLevel.Information,
+                    columnOptions: GetColumnOptions())
+                .WriteTo.Email(
+                    from: emailOptions.Credentials.Username,
+                    to: string.Join(";", emailOptions.ErrorTos), // Array'i ; ile birleştir
+                    host: emailOptions.Host,
+                    port: emailOptions.Port,
+                    connectionSecurity: emailOptions.EnableSsl
+                        ? MailKit.Security.SecureSocketOptions.StartTls
+                        : MailKit.Security.SecureSocketOptions.SslOnConnect,
+                    credentials: new NetworkCredential(
+                        emailOptions.Credentials.Username,
+                        emailOptions.Credentials.Password
+                    ),
+                    subject: "🚨 EgesehirVakifBankVirtualPOS.WebAPI - {Level} - {Timestamp:dd-MM-yyyy HH:mm}",
+                    restrictedToMinimumLevel: LogEventLevel.Error
+                )
+                .CreateLogger();
+
+            host.UseSerilog();
+
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "VakifBankVirtualPOS.WebAPI",
+                    Version = "v1",
+                    Description = "VakıfBank Sanal POS Web API"
+                });
+
+                //options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                //{
+                //    Name = "Authorization",
+                //    Type = SecuritySchemeType.Http,
+                //    Scheme = "Bearer",
+                //    BearerFormat = "JWT",
+                //    In = ParameterLocation.Header,
+                //    Description = "JWT token giriniz. Sadece token yazın, 'Bearer' eklemeyin.\n\nÖrnek: eyJhbGciOiJIUzI1NiIs..."
+                //});
+
+                //options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                //{
+                //    {
+                //        new OpenApiSecurityScheme
+                //        {
+                //            Reference = new OpenApiReference
+                //            {
+                //                Type = ReferenceType.SecurityScheme,
+                //                Id = "Bearer"
+                //            }
+                //        },
+                //        Array.Empty<string>()
+                //    }
+                //});
+            });
+
+            services.AddCarter();
+            services.AddEndpointsApiExplorer();
+
+            services.AddDistributedMemoryCache();
+
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IClientRepository, ClientRepository>();
+            services.AddScoped<IVakifBankPaymentService, VakifBankPaymentService>();
+            services.AddScoped<IHttpClientService, HttpClientService>();
+            services.AddSingleton<IXmlService, XmlService>();
+            return services;
+        }
+
+        private static ColumnOptions GetColumnOptions()
+        {
+            var columnOptions = new ColumnOptions();
+
+            columnOptions.Store.Remove(StandardColumn.MessageTemplate);
+
+            columnOptions.Store.Add(StandardColumn.LogEvent);
+
+            columnOptions.DisableTriggers = true;
+
+            columnOptions.AdditionalColumns = new Collection<SqlColumn>
+            {
+                new SqlColumn { ColumnName = "UserId", DataType = SqlDbType.NVarChar, DataLength = 50, AllowNull = true },
+                new SqlColumn { ColumnName = "Action", DataType = SqlDbType.NVarChar, DataLength = 100, AllowNull = true },
+                new SqlColumn { ColumnName = "Module", DataType = SqlDbType.NVarChar, DataLength = 100, AllowNull = true },
+                new SqlColumn { ColumnName = "ClientIP", DataType = SqlDbType.NVarChar, DataLength = 45, AllowNull = true },
+                new SqlColumn { ColumnName = "UserAgent", DataType = SqlDbType.NVarChar, DataLength = 500, AllowNull = true },
+                new SqlColumn { ColumnName = "RequestId", DataType = SqlDbType.NVarChar, DataLength = 50, AllowNull = true }
+            };
+
+            return columnOptions;
+        }
+    }
+}
