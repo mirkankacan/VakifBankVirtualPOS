@@ -134,7 +134,8 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
 
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IClientRepository, ClientRepository>();
-            services.AddScoped<IVakifBankPaymentService, VakifBankPaymentService>();
+            services.AddScoped<IVakifBankService, VakifBankService>();
+            services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IHttpClientService, HttpClientService>();
             services.AddSingleton<IXmlService, XmlService>();
             return services;

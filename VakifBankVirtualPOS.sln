@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VakifBankVirtualPOS.WebAPI", "VakifBankVirtualPOS.WebAPI\VakifBankVirtualPOS.WebAPI.csproj", "{78CF9112-1B00-56A1-DD92-8B60C84E2D99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VakifBankVirtualPOS.WebUI", "VakifBankVirtualPOS.WebUI\VakifBankVirtualPOS.WebUI.csproj", "{FDF33CD4-04A4-A6DB-40E2-AC01B9E3F45A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{78CF9112-1B00-56A1-DD92-8B60C84E2D99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78CF9112-1B00-56A1-DD92-8B60C84E2D99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78CF9112-1B00-56A1-DD92-8B60C84E2D99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78CF9112-1B00-56A1-DD92-8B60C84E2D99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDF33CD4-04A4-A6DB-40E2-AC01B9E3F45A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDF33CD4-04A4-A6DB-40E2-AC01B9E3F45A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDF33CD4-04A4-A6DB-40E2-AC01B9E3F45A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDF33CD4-04A4-A6DB-40E2-AC01B9E3F45A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F322837F-F22F-4559-8505-7B0FD96CF14D}
+	EndGlobalSection
+EndGlobal

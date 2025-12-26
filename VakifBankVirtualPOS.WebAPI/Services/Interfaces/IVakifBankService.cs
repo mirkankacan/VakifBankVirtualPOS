@@ -6,7 +6,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Interfaces
     /// <summary>
     /// VakıfBank Sanal POS ödeme servisi interface
     /// </summary>
-    public interface IVakifBankPaymentService
+    public interface IVakifBankService
     {
         /// <summary>
         /// 3D Secure işlemini başlatır (Enrollment)

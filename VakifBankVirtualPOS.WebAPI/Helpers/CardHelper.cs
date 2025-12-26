@@ -128,13 +128,21 @@
         /// <param name="month">Ay (1-12)</param>
         /// <param name="year">Yıl (2025, 26, vb.)</param>
         /// <returns>YYMM formatında string (örn: 2512)</returns>
-        public static string FormatExpiryDate(int month, int year)
+        public static string ConvertExpiryDateToYYMM(string expiryDate)
         {
-            // Yıl 4 haneli ise son 2 hanesini al
-            if (year > 100)
-                year = year % 100;
+            if (string.IsNullOrWhiteSpace(expiryDate))
+                return string.Empty;
 
-            return $"{year:D2}{month:D2}";
+            // MM/YY formatından MM ve YY'yi al
+            var parts = expiryDate.Split('/');
+            if (parts.Length != 2)
+                return expiryDate;
+
+            var month = parts[0].PadLeft(2, '0');
+            var year = parts[1].PadLeft(2, '0');
+
+            // YYMM formatına çevir
+            return $"{year}{month}";
         }
 
         /// <summary>

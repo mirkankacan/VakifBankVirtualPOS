@@ -16,23 +16,23 @@ namespace VakifBankPayment.Services.Implementations
     /// <summary>
     /// VakıfBank Sanal POS ödeme servisi
     /// </summary>
-    public class VakifBankPaymentService : IVakifBankPaymentService
+    public class VakifBankService : IVakifBankService
     {
         private readonly VakifBankOptions _options;
         private readonly IHttpClientService _httpClientService;
         private readonly IXmlService _xmlService;
         private readonly IDistributedCache _cache;
-        private readonly ILogger<VakifBankPaymentService> _logger;
+        private readonly ILogger<VakifBankService> _logger;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IClientRepository _clientRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public VakifBankPaymentService(
+        public VakifBankService(
             VakifBankOptions options,
             IHttpClientService httpClientService,
             IXmlService xmlService,
             IDistributedCache cache,
-            ILogger<VakifBankPaymentService> logger,
+            ILogger<VakifBankService> logger,
             IPaymentRepository paymentRepository,
             IClientRepository clientRepository,
             IHttpContextAccessor httpContextAccessor)
@@ -123,7 +123,7 @@ namespace VakifBankPayment.Services.Implementations
                     { "MerchantPassword", _options.MerchantPassword },
                     { "VerifyEnrollmentRequestId", Guid.NewGuid().ToString() },
                     { "Pan", cleanCardNumber },
-                    { "ExpiryDate", request.ExpiryDate },
+                    { "ExpiryDate", CardHelper.ConvertExpiryDateToYYMM(request.ExpiryDate)},
                     { "PurchaseAmount", CardHelper.FormatAmount(request.Amount) },
                     { "Currency", _options.Currency },
                     { "BrandName", brandName },

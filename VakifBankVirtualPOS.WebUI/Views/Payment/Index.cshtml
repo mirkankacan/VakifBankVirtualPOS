@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Test Ödeme";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    Test Ödeme İşlemi
+                </h3>
+            </div>
+            <div class="card-body text-center">
+                <p class="lead mb-4">
+                    Hardcoded değerlerle test endpoint'ine istek atılacak.
+                </p>
+                
+                <form asp-action="Initiate" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                        <span id="submitText">Test İsteği Gönder</span>
+                        <span id="submitSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Form submit animasyonu
+        document.querySelector('form')?.addEventListener('submit', function () {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            
+            if (submitBtn && submitText && submitSpinner) {
+                submitBtn.disabled = true;
+                submitText.textContent = 'İşleniyor...';
+                submitSpinner.classList.remove('d-none');
+            }
+        });
+    </script>
+}
+

@@ -19,7 +19,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
             // 3D Secure başlatma
             group.MapPost("/initiate", async (
                 [FromBody] PaymentInitiateRequestDto request,
-                [FromServices] IVakifBankPaymentService paymentService,
+                [FromServices] IVakifBankService paymentService,
                 CancellationToken cancellationToken) =>
             {
                 var result = await paymentService.InitiateThreeDSecureAsync(request, cancellationToken);
@@ -31,7 +31,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
             // 3D Secure callback
             group.MapPost("/3d-callback", async (
                 [FromForm] ThreeDCallbackDto callback,
-                [FromServices] IVakifBankPaymentService paymentService,
+                [FromServices] IVakifBankService paymentService,
                 CancellationToken cancellationToken) =>
             {
                 var result = await paymentService.CompletePaymentAsync(callback, cancellationToken);
@@ -48,7 +48,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 {
                     status = "healthy",
                     service = "VakifBankPayment",
-                    timestamp = DateTime.UtcNow
+                    timestamp = DateTime.Now
                 });
             })
             .WithName("PaymentHealthCheck")
