@@ -61,7 +61,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                             PermitLimit = 100, // 100 istek
                             Window = TimeSpan.FromMinutes(1), // 1 dakikada
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            QueueLimit = 10
+                            QueueLimit = 0
                         });
                 });
 
@@ -78,7 +78,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                             Window = TimeSpan.FromMinutes(1), // 1 dakikada
                             SegmentsPerWindow = 2,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            QueueLimit = 2
+                            QueueLimit = 0
                         });
                 });
 
@@ -93,7 +93,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                         {
                             TokenLimit = 20,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            QueueLimit = 5,
+                            QueueLimit = 0,
                             ReplenishmentPeriod = TimeSpan.FromMinutes(1),
                             TokensPerPeriod = 10,
                             AutoReplenishment = true

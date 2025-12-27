@@ -268,7 +268,7 @@ namespace VakifBankPayment.Services.Implementations
                         errorMessage: paymentResult.Message
                     );
                     await _emailService.SendPaymentFailedMailAsync(orderId, cancellationToken);
-                    _logger.LogWarning("Ödeme başarısız. OrderId: {OrderId}, ErrorCode: {ErrorCode}, Message: {Message}",
+                    _logger.LogError("Ödeme başarısız. OrderId: {OrderId}, ErrorCode: {ErrorCode}, Message: {Message}",
                         orderId, paymentResult.ErrorCode, paymentResult.Message);
 
                     return ServiceResult<PaymentResultDto>.Error(
