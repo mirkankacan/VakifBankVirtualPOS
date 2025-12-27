@@ -53,8 +53,8 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                         .Replace("{{Amount}}", payment.Amount.ToString("C2"))
                         .Replace("{{DocumentNo}}", WebUtility.HtmlEncode(payment.DocumentNo) ?? string.Empty)
                         .Replace("{{OrderId}}", WebUtility.HtmlEncode(payment.OrderId))
-                        .Replace("{{CreatedAt}}", payment.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
-                        .Replace("{{CompletedAt}}", payment.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm"))
+                        .Replace("{{CreatedAt}}", payment.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
+                        .Replace("{{CompletedAt}}", payment.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm:ss"))
                         .Replace("{{ThreeDSecureStatus}}", WebUtility.HtmlEncode(payment.ThreeDSecureStatus))
                         .Replace("{{ErrorCode}}", WebUtility.HtmlEncode(payment.ErrorCode))
                         .Replace("{{ErrorMessage}}", WebUtility.HtmlEncode(payment.ErrorMessage));
@@ -171,9 +171,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                     {
                         message.Bcc.Add(MailboxAddress.Parse(requiredBcc));
                     }
-
                 }
-
 
                 message.Subject = subject;
 
@@ -197,7 +195,6 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
 
                 if (_options.Port == 587)
                     secureOption = SecureSocketOptions.StartTls;
-
 
                 await client.ConnectAsync(_options.Host, _options.Port, secureOption, cancellationToken);
                 await client.AuthenticateAsync(_options.Credentials.Username, _options.Credentials.Password, cancellationToken);

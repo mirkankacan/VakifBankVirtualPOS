@@ -22,7 +22,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 CancellationToken cancellationToken) =>
             {
                 var request = new PaymentInitiateRequestDto();
-                request.DocumentNo = "3009-2025";
+                request.DocumentNo = null;
                 request.ClientCode = "123456";
                 request.ExpiryDate = "11/24";
                 request.Amount = 1000;

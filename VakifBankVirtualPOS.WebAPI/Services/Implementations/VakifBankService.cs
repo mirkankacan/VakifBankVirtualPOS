@@ -1,8 +1,7 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using System.Net;
-using System.Text.Json;
+﻿using System.Net;
 using VakifBankPayment.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Common;
+using VakifBankVirtualPOS.WebAPI.Constants;
 using VakifBankVirtualPOS.WebAPI.Data.Entities;
 using VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos;
 using VakifBankVirtualPOS.WebAPI.Helpers;
@@ -19,7 +18,6 @@ namespace VakifBankPayment.Services.Implementations
     {
         private readonly VakifBankOptions _options;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IDistributedCache _cache;
         private readonly ILogger<VakifBankService> _logger;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IClientRepository _clientRepository;
@@ -29,7 +27,6 @@ namespace VakifBankPayment.Services.Implementations
         public VakifBankService(
             VakifBankOptions options,
             IHttpClientFactory httpClientFactory,
-            IDistributedCache cache,
             ILogger<VakifBankService> logger,
             IPaymentRepository paymentRepository,
             IClientRepository clientRepository,
@@ -38,7 +35,6 @@ namespace VakifBankPayment.Services.Implementations
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));
@@ -92,43 +88,6 @@ namespace VakifBankPayment.Services.Implementations
 
                 // 5. VerifyEnrollmentRequestId oluştur (benzersiz olmalı)
                 var verifyEnrollmentRequestId = Guid.NewGuid().ToString();
-
-                // 6. Ödeme bilgilerini cache'e kaydet (VerifyEnrollmentRequestId ile)
-                var paymentData = new
-                {
-                    OrderId = orderId,
-                    Cvv = request.Cvv,
-                    CardHolderName = request.CardHolderName,
-                    Amount = request.Amount,
-                    CardNumber = cleanCardNumber,
-                    ExpiryDate = request.ExpiryDate,
-                    BrandName = brandName,
-                    ClientIp = clientIp,
-                    ClientCode = request.ClientCode,
-                    DocumentNo = request.DocumentNo,
-                    VerifyEnrollmentRequestId = verifyEnrollmentRequestId,
-                    CreatedAt = DateTime.Now
-                };
-
-                var cacheOptions = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_options.CacheTimeoutMinutes)
-                };
-
-                // OrderId ve VerifyEnrollmentRequestId ile iki ayrı cache kaydı oluştur
-                var serializedData = JsonSerializer.Serialize(paymentData);
-                await _cache.SetStringAsync(
-                    $"payment:{orderId}",
-                    serializedData,
-                    cacheOptions);
-
-                await _cache.SetStringAsync(
-                    $"payment:verify:{verifyEnrollmentRequestId}",
-                    serializedData,
-                    cacheOptions);
-
-                _logger.LogInformation("Ödeme bilgileri cache'e kaydedildi. OrderId: {OrderId}, VerifyEnrollmentRequestId: {VerifyId}",
-                    orderId, verifyEnrollmentRequestId);
 
                 // 7. Enrollment isteği hazırla
                 // SessionInfo'ya OrderId gönder (VakıfBank bunu geri döndürecek)
@@ -265,22 +224,6 @@ namespace VakifBankPayment.Services.Implementations
 
                 _logger.LogInformation("Ödeme tamamlanıyor. OrderId: {OrderId}", orderId);
 
-                // 4. Cache'ten ödeme bilgilerini al (VerifyEnrollmentRequestId ile)
-                var cachedJson = await _cache.GetStringAsync($"payment:verify:{callback.VerifyEnrollmentRequestId}");
-
-                if (string.IsNullOrEmpty(cachedJson))
-                {
-                    _logger.LogWarning("Cache'te ödeme bilgisi bulunamadı. VerifyEnrollmentRequestId: {VerifyId}",
-                        callback.VerifyEnrollmentRequestId);
-
-                    return ServiceResult<PaymentResultDto>.Error(
-                        "Session Timeout",
-                        "Ödeme oturumu zaman aşımına uğradı. Lütfen işlemi yeniden başlatın.",
-                        HttpStatusCode.BadRequest);
-                }
-
-                var paymentData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(cachedJson);
-
                 // 5. VPOS provizyon isteği hazırla
                 var vposRequest = new VposRequestDto
                 {
@@ -310,11 +253,6 @@ namespace VakifBankPayment.Services.Implementations
 
                 // 7. Cevabı parse et
                 var paymentResult = ParseVposResponse(xmlResponse);
-
-                // 8. Cache'i temizle (her iki key'i de)
-                await _cache.RemoveAsync($"payment:{orderId}");
-                await _cache.RemoveAsync($"payment:verify:{callback.VerifyEnrollmentRequestId}");
-                _logger.LogInformation("Cache temizlendi. OrderId: {OrderId}", orderId);
 
                 // 9. Sonucu kontrol et ve veritabanını güncelle
                 if (!paymentResult.IsSuccess)
@@ -392,25 +330,13 @@ namespace VakifBankPayment.Services.Implementations
                     result.TermUrl = XmlHelper.GetElementValue(xmlResponse, "TermUrl");
                     result.MD = XmlHelper.GetElementValue(xmlResponse, "MD");
                 }
-                else if (result.Status == "N")
-                {
-                    // Kart 3D Secure programına kayıtlı değil
-                    result.Message = "Bu kart 3D Secure desteklemiyor. Lütfen başka bir kart kullanın veya kartınızı bankanızdan 3D Secure için aktif ettirin.";
-                }
-                else if (result.Status == "U")
-                {
-                    // Sistem kullanılamıyor
-                    result.Message = "3D Secure sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.";
-                }
                 else if (result.Status == "E")
                 {
                     // Hata
                     var errorCode = XmlHelper.GetElementValue(xmlResponse, "ErrorCode");
                     var errorMessage = XmlHelper.GetElementValue(xmlResponse, "ErrorMessage");
-                    result.Message = !string.IsNullOrEmpty(errorMessage)
-                        ? errorMessage
-                        : "3D Secure doğrulama hatası.";
                 }
+                result.Message = GetStatusMessage(result.Status);
 
                 return result;
             }
@@ -434,12 +360,12 @@ namespace VakifBankPayment.Services.Implementations
                 var authCode = XmlHelper.GetElementValue(xmlResponse, "AuthCode");
                 var orderId = XmlHelper.GetElementValue(xmlResponse, "OrderId");
 
-                var isSuccess = resultCode == "0000";
-
+                var isSuccess = VakifBankResponseCodes.IsSuccess(resultCode);
+                var codeMessage = VakifBankResponseCodes.GetMessage(resultCode);
                 return new PaymentResultDto
                 {
                     IsSuccess = isSuccess,
-                    Message = isSuccess ? "Ödeme başarılı" : resultDetail,
+                    Message = isSuccess ? codeMessage : $"{resultDetail} - {codeMessage}",
                     TransactionId = transactionId,
                     AuthCode = authCode,
                     OrderId = orderId,
@@ -483,16 +409,69 @@ namespace VakifBankPayment.Services.Implementations
             if (!string.IsNullOrEmpty(forwardedFor))
             {
                 var ips = forwardedFor.Split(',');
-                return ips[0].Trim();
+                var ip = ips[0].Trim();
+                return NormalizeIpAddress(ip);
             }
 
             // X-Real-IP header'ını kontrol et
             var realIp = httpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
             if (!string.IsNullOrEmpty(realIp))
-                return realIp;
+                return NormalizeIpAddress(realIp);
 
             // RemoteIpAddress'i kullan
-            return httpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+            // ::1 (IPv6 loopback) ise, local IP'yi almaya çalış
+            if (remoteIp == "::1" || remoteIp == "127.0.0.1")
+            {
+                return GetLocalIpAddress();
+            }
+
+            return NormalizeIpAddress(remoteIp);
+        }
+
+        private string NormalizeIpAddress(string ip)
+        {
+            // IPv6 loopback'i IPv4'e çevir
+            if (ip == "::1")
+            {
+                return GetLocalIpAddress();
+            }
+
+            return ip;
+        }
+
+        private string GetLocalIpAddress()
+        {
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+
+                // Önce IPv4 adreslerini kontrol et
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        return ip.ToString();
+                    }
+                }
+
+                // IPv4 bulunamazsa IPv6'yı al (::1 hariç)
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 &&
+                        !ip.IsIPv6LinkLocal && ip.ToString() != "::1")
+                    {
+                        return ip.ToString();
+                    }
+                }
+            }
+            catch
+            {
+                // Hata durumunda fallback
+            }
+
+            return "127.0.0.1";
         }
 
         #endregion Private Helper Methods

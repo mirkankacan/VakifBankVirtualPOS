@@ -41,11 +41,5 @@ namespace VakifBankVirtualPOS.WebAPI.Options
         /// </summary>
         [Required]
         public string Currency { get; set; } = default!;
-
-        /// <summary>
-        /// Cache timeout süresi (dakika)
-        /// </summary>
-        [Required]
-        public int CacheTimeoutMinutes { get; set; } = default!;
     }
 }
