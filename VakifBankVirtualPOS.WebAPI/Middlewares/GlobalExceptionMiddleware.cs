@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Serilog.Context;
 using System.Net;
-using System.Security.Claims;
 using System.Text.Json;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 
@@ -36,7 +35,7 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
         {
             var request = context.Request;
 
-            var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Anonymous";
+            var userId = _httpContextAccessor.HttpContext?.Session.GetString("ClientCode"); ;
             var clientIp = IpHelper.GetClientIp(_httpContextAccessor);
             var userAgent = request.Headers["User-Agent"].ToString();
             var requestId = context.TraceIdentifier;
