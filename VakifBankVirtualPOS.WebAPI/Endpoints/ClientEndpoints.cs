@@ -24,7 +24,8 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("CheckClientByNo")
-            .WithSummary("Vergi veya TC numarasına göre cari kontrol eder varsa getirir yoksa oluşturur");
+            .WithSummary("Vergi veya TC numarasına göre cari kontrol eder varsa getirir yoksa oluşturur")
+            .RequireRateLimiting("client");
 
             group.MapGet("/transaction/document-no/{documentNo}", async (
              string documentNo,
@@ -34,7 +35,9 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 var result = await clientService.GetTransactionsByDocumentAsync(documentNo, cancellationToken);
                 return result.ToGenericResult();
             })
-         .WithName("GetTransactionsByDocument");
+         .WithName("GetTransactionsByDocument")
+         .WithSummary("Belge numarasına göre cari hareket getirir")
+         .RequireRateLimiting("client");
 
             // Vergi numarasına göre müşteri getirme
             group.MapGet("/tax-number/{taxNumber}", async (
@@ -46,7 +49,8 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("GetClientByTaxNumber")
-            .WithSummary("Vergi numarasına göre cari getirir");
+            .WithSummary("Vergi numarasına göre cari getirir")
+            .RequireRateLimiting("client");
 
             // TC kimlik numarasına göre müşteri getirme
             group.MapGet("/tc-number/{tcNumber}", async (
@@ -58,7 +62,8 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("GetClientByTcNumber")
-            .WithSummary("TC kimlik numarasına göre cari getirir");
+            .WithSummary("TC kimlik numarasına göre cari getirir")
+            .RequireRateLimiting("client");
 
             // Cari koduna göre müşteri getirme
             group.MapGet("/code/{clientCode}", async (
@@ -70,7 +75,8 @@ namespace VakifBankVirtualPOS.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("GetClientByCode")
-            .WithSummary("Cari koduna göre cari getirir");
+            .WithSummary("Cari koduna göre cari getirir")
+            .RequireRateLimiting("client");
         }
     }
 }

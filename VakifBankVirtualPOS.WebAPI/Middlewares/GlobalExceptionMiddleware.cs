@@ -5,16 +5,19 @@ using Serilog.Context;
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
+using VakifBankVirtualPOS.WebAPI.Helpers;
 
 namespace VakifBankVirtualPOS.WebAPI.Middlewares
 {
     public class GlobalExceptionMiddleware : IMiddleware
     {
         private readonly ILogger<GlobalExceptionMiddleware> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public GlobalExceptionMiddleware(ILogger<GlobalExceptionMiddleware> logger)
+        public GlobalExceptionMiddleware(ILogger<GlobalExceptionMiddleware> logger, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -34,7 +37,7 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
             var request = context.Request;
 
             var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Anonymous";
-            var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            var clientIp = IpHelper.GetClientIp(_httpContextAccessor);
             var userAgent = request.Headers["User-Agent"].ToString();
             var requestId = context.TraceIdentifier;
             var action = $"{request.Method} {request.Path}";
@@ -43,7 +46,7 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
             var actionName = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>()?.ActionName ?? "Unknown";
             var module = $"{controllerName}Controller";
 
-            using (LogContext.PushProperty("UserId", userId))
+            using (LogContext.PushProperty("ClientCode", userId))
             using (LogContext.PushProperty("Action", action))
             using (LogContext.PushProperty("Module", module))
             using (LogContext.PushProperty("ClientIP", clientIp))

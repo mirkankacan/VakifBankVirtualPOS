@@ -26,7 +26,8 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 return result.ToGenericResult();
             })
             .WithName("InitiateThreeDSecure")
-            .WithSummary("3D Secure ödeme işlemini başlatır");
+            .WithSummary("3D Secure ödeme işlemini başlatır")
+            .RequireRateLimiting("payment");
 
             // 3D Secure callback
             group.MapPost("/3d-callback", async (
@@ -39,7 +40,8 @@ namespace VakifBankPayment.WebAPI.Endpoints
             })
             .WithName("ThreeDCallback")
             .WithSummary("3D Secure doğrulama sonrası callback")
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .RequireRateLimiting("payment");
         }
     }
 }

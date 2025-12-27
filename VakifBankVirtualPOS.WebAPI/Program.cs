@@ -12,6 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptionsExtensions();
 builder.Services.AddWebApiServices(builder.Configuration, builder.Host);
 var app = builder.Build();
+app.UseHttpsRedirection();
+
+app.UseSession();
+app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
@@ -31,6 +35,5 @@ if (app.Environment.IsDevelopment())
     context.Database.Migrate();
 }
 
-app.UseHttpsRedirection();
 app.MapCarter();
 app.Run();

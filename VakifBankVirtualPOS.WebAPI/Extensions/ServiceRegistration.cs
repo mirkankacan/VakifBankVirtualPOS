@@ -1,5 +1,6 @@
 ﻿using Carter;
 using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -8,8 +9,10 @@ using Serilog.Sinks.MSSqlServer;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Net;
+using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
+using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Middlewares;
 using VakifBankVirtualPOS.WebAPI.Options;
 using VakifBankVirtualPOS.WebAPI.Repositories.Implementations;
@@ -33,7 +36,83 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
 
             services.AddHttpClient();
             services.AddHttpContextAccessor();
+            services.AddDistributedMemoryCache();
+            services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.Session";
+            });
+            services.AddRateLimiter(options =>
+            {
+                // Global rate limit - IP bazlı
+                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                {
+                    var httpContextAccessor = context.RequestServices.GetRequiredService<IHttpContextAccessor>();
+                    var clientIp = IpHelper.GetClientIp(httpContextAccessor);
 
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: clientIp,
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 100, // 100 istek
+                            Window = TimeSpan.FromMinutes(1), // 1 dakikada
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 10
+                        });
+                });
+
+                // Ödeme endpoint'leri için daha kısıtlayıcı limit
+                options.AddPolicy("payment", context =>
+                {
+                    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: clientIp,
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5, // 5 ödeme isteği
+                            Window = TimeSpan.FromMinutes(1), // 1 dakikada
+                            SegmentsPerWindow = 2,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 2
+                        });
+                });
+
+                // Client kontrol endpoint'i için
+                options.AddPolicy("client", context =>
+                {
+                    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetTokenBucketLimiter(
+                        partitionKey: clientIp,
+                        factory: _ => new TokenBucketRateLimiterOptions
+                        {
+                            TokenLimit = 20,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 5,
+                            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                            TokensPerPeriod = 10,
+                            AutoReplenishment = true
+                        });
+                });
+
+                options.OnRejected = async (context, cancellationToken) =>
+                {
+                    context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+                    await context.HttpContext.Response.WriteAsJsonAsync(new ProblemDetails
+                    {
+                        Status = StatusCodes.Status429TooManyRequests,
+                        Title = "Çok Fazla İstek",
+                        Detail = "Çok fazla istek gönderdiniz. Lütfen bir süre bekleyip tekrar deneyin.",
+                        Instance = context.HttpContext.Request.Path
+                    }, cancellationToken);
+                };
+            });
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -97,7 +176,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "VakifBankVirtualPOS.WebAPI",
+                    Title = "EgesehirVakifBankVirtualPOS.WebAPI",
                     Version = "v1",
                     Description = "VakıfBank Sanal POS Web API"
                 });
@@ -155,7 +234,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
 
             columnOptions.AdditionalColumns = new Collection<SqlColumn>
             {
-                new SqlColumn { ColumnName = "UserId", DataType = SqlDbType.NVarChar, DataLength = 50, AllowNull = true },
+                new SqlColumn { ColumnName = "ClientCode", DataType = SqlDbType.NVarChar, DataLength = 50, AllowNull = true },
                 new SqlColumn { ColumnName = "Action", DataType = SqlDbType.NVarChar, DataLength = 100, AllowNull = true },
                 new SqlColumn { ColumnName = "Module", DataType = SqlDbType.NVarChar, DataLength = 100, AllowNull = true },
                 new SqlColumn { ColumnName = "ClientIP", DataType = SqlDbType.NVarChar, DataLength = 45, AllowNull = true },
