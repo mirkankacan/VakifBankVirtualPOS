@@ -21,8 +21,10 @@ appsettings.Development.json
 appsettings.*.json
 !appsettings.json
 
-# Tool'lar (opsiyonel - eğer paylaşmak istemiyorsanız)
-VakifBankVirtualPOS.WebAPI/Tools/EncryptConfiguration.cs
+# Tool'lar
+**/Helpers/ConfigurationEncryptionHelper.cs
+**/Tools/EncryptConfiguration.cs
+Tools/
 
 **/Uploads/
 *.log
