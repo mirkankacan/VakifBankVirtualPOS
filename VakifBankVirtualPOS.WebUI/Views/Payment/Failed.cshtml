@@ -36,23 +36,18 @@
                                 }
                                 @if (!string.IsNullOrEmpty(Model.ResultCode))
                                 {
-                                    <div class="mb-2">
+                                    <div class="">
                                         <strong>Hata Kodu:</strong> <span class="text-muted">@Model.ResultCode</span>
                                     </div>
                                 }
                             </div>
                         </div>
                     }
-                    else if (!string.IsNullOrEmpty(ViewBag.Message as string))
-                    {
-                        <div class="alert alert-danger">
-                            <strong>Hata Mesajı:</strong> @ViewBag.Message
-                        </div>
-                    }
+             
 
                     <div class="mt-4">
                         <a href="@Url.Action("Index", "Payment")" class="btn btn-egesehir">
-                            <i class="fa-solid fa-home mx-2"></i>Ana Sayfaya Dön
+                            <i class="fa-solid fa-home mx-2"></i>Ödeme Sayfasına Dön
                         </a>
                     </div>
                 </div>

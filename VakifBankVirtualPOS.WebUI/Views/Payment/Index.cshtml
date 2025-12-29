@@ -44,15 +44,16 @@
                     @Html.AntiForgeryToken()
                     <div class="col-md-12 text-center card-description">
                         <h3 id="clientName"></h3>
-                        <h4>Carisi İçin Ödeme Sayfası</h4>
+                        <h5>Carisi İçin Ödeme Bilgileri</h5>
                     </div>
                     <div class="col-md-12">
                         <label for="txtCardHolderName" class="form-label">Kart Üstündeki İsim Soyisim</label>
-                        <input type="text" class="form-control" id="txtCardHolderName" value="" required>
+                        <input type="text" class="form-control" id="txtCardHolderName" value="" required
+                            style="text-transform: uppercase;" pattern="[A-ZİĞÜŞÇÖ\s]+" />
                         <div class="valid-feedback">
                         </div>
                         <div class="invalid-feedback">
-                            Lütfen geçerli bir isim soyisim giriniz.
+                            Lütfen sadece harf kullanarak geçerli bir isim soyisim giriniz.
                         </div>
                     </div>
                     <div class="col-md-12">
@@ -106,7 +107,6 @@
 </div>
 @section Scripts {
     <script>
-        // Cari bilgilerini saklamak için global değişken
         let clientData = null;
 
         $(document).ready(async function () {
@@ -115,6 +115,14 @@
             $('#txtExpMonthYear').mask('00/00'); // AA/YY formatı
             $('#txtCvv').mask('0000'); // CVV (3-4 hane)
             $('#txtAmount').mask('#.##0,00', { reverse: true }); // Tutar (Türkçe format)
+
+            // Kart üstündeki isim alanını her zaman büyük harfe çevir ve sadece harf kabul et (Türkçe karakter desteği ile)
+            $('#txtCardHolderName').on('input', function () {
+                // Sadece harf ve boşluk karakterlerini kabul et
+                this.value = this.value.replace(/[^A-Za-zİıĞğÜüŞşÇçÖö\s]/g, '');
+                // Büyük harfe çevir
+                this.value = this.value.toLocaleUpperCase('tr-TR');
+            });
 
             await processHybsParameters();
 
@@ -265,6 +273,12 @@
                     return;
                 }
 
+                // İsim soyisim sadece harf kontrolü
+                if (!/^[A-ZİĞÜŞÇÖ\s]+$/.test(cardHolderName)) {
+                    toastr.error('İsim soyisim alanı sadece harf içermelidir.');
+                    return;
+                }
+
                 // Son kullanma tarihi format kontrolü (AA/YY)
                 if (!/^\d{2}\/\d{2}$/.test(expMonthYear)) {
                     toastr.error('Son kullanma tarihi AA/YY formatında olmalıdır (örn: 12/25).');
@@ -301,8 +315,6 @@
                         toastr.error('Lütfen tutar giriniz.');
                         return;
                     }
-                    // Mask formatını temizle (1.000,00 -> 1000.00)
-                    // Noktaları kaldır (binlik ayırıcı), virgülü noktaya çevir (ondalık ayırıcı)
                     let cleanAmount = amountInput.replace(/\./g, '').replace(',', '.');
                     amount = parseFloat(cleanAmount);
                     if (isNaN(amount) || amount <= 0) {
@@ -331,7 +343,7 @@
                     clientCode: clientCode,
                     documentNo: documentNo || null
                 };
-             
+
                 // Butonu disable et ve loading göster
                 submitButton.prop('disabled', true);
                 submitButton.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Ödeme Başlatılıyor...');
@@ -355,7 +367,7 @@
 
                 // 3D Secure sayfasına yönlendir
                 if (result && result.redirectUrl) {
-                 
+
                     submitButton.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Yönlendiriliyor...');
                     window.location.href = result.redirectUrl;
                 } else {

@@ -71,6 +71,7 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
             ViewBag.TermUrl = HttpContext.Session.GetString("TermUrl");
             ViewBag.MD = HttpContext.Session.GetString("MD");
             ViewBag.OrderId = HttpContext.Session.GetString("OrderId");
+            ClearPaymentSession();
 
             if (string.IsNullOrEmpty(ViewBag.ACSUrl))
             {
@@ -83,7 +84,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         [HttpGet("basarili/{orderId}")]
         public async Task<IActionResult> Success(string orderId, CancellationToken cancellationToken)
         {
-            ClearPaymentSession();
             var payment = await _paymentApiService.GetPaymentByOrderIdAsync(orderId, cancellationToken);
             if (payment.IsSuccess)
             {
@@ -100,8 +100,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         [HttpGet("basarisiz/{orderId?}")]
         public async Task<IActionResult> Failed(string? orderId, CancellationToken cancellationToken)
         {
-            ViewBag.Message = HttpContext.Session.GetString("Message") ?? "Ödeme işlemi başarısız oldu.";
-            ClearPaymentSession();
             if (!string.IsNullOrEmpty(orderId))
             {
                 var payment = await _paymentApiService.GetPaymentByOrderIdAsync(orderId, cancellationToken);

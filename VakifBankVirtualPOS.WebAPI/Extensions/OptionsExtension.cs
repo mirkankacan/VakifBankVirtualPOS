@@ -10,6 +10,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddValidatedOptions<VakifBankOptions>();
             services.AddValidatedOptions<EmailOptions>();
             services.AddValidatedOptions<HybsOptions>();
+            services.AddValidatedOptions<UiOptions>();
 
             return services;
         }

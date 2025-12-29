@@ -24,7 +24,7 @@ builder.Services.AddSession(options =>
 // HttpClient ve API servisleri
 builder.Services.AddHttpClient<IApiService, ApiService>(client =>
 {
-    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"]!;
+    var baseUrl = builder.Configuration["ApiOptions:BaseUrl"]!;
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
