@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace VakifBankVirtualPOS.WebUI.Models
+namespace VakifBankVirtualPOS.WebUI.Models.PaymentViewModels
 {
     public class PaymentInitiateViewModel
     {
@@ -32,3 +32,4 @@ namespace VakifBankVirtualPOS.WebUI.Models
         public string? DocumentNo { get; set; }
     }
 }
+

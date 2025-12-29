@@ -52,7 +52,7 @@
         /// <summary>
         /// Hata kodu (varsa)
         /// </summary>
-        public string? ErrorCode { get; set; }
+        public string? ResultCode { get; set; }
 
         /// <summary>
         /// Hata mesajı (varsa)
@@ -68,11 +68,6 @@
         /// Müşteri IP adresi
         /// </summary>
         public string ClientIp { get; set; }
-
-        /// <summary>
-        /// Kullanıcı ID (opsiyonel - kendi sisteminizden)
-        /// </summary>
-        public int? UserId { get; set; }
 
         /// <summary>
         /// Ödeme başlatma tarihi

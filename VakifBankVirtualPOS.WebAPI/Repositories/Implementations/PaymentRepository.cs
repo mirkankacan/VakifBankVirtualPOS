@@ -71,7 +71,7 @@ namespace VakifBankVirtualPOS.WebAPI.Repositories.Implementations
             CancellationToken cancellationToken,
             string? transactionId = null,
             string? authCode = null,
-            string? errorCode = null,
+            string? resultCode = null,
             string? errorMessage = null)
         {
             try
@@ -94,8 +94,8 @@ namespace VakifBankVirtualPOS.WebAPI.Repositories.Implementations
                 if (!string.IsNullOrEmpty(authCode))
                     payment.AuthCode = authCode;
 
-                if (!string.IsNullOrEmpty(errorCode))
-                    payment.ErrorCode = errorCode;
+                if (!string.IsNullOrEmpty(resultCode))
+                    payment.ResultCode = resultCode;
 
                 if (!string.IsNullOrEmpty(errorMessage))
                     payment.ErrorMessage = errorMessage;

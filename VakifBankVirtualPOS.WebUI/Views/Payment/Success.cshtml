@@ -1,0 +1,33 @@
+﻿@model VakifBankVirtualPOS.WebUI.Models.PaymentViewModels.PaymentResultViewModel
+@{
+    ViewData["Title"] = "Ödeme Başarılı";
+}
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center">
+                    <img src="~/theme/assets/images/egesehir.png" class="img-fluid" />
+                </h5>
+                <div class="text-center">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-circle-check text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="text-success mb-3">Ödeme Başarılı</h2>
+                    <p class="text-muted mb-2">Ödeme işleminiz başarıyla tamamlandı.</p>
+                      @if (Model != null)
+                    {
+                        <h3><span class="text-muted mb-4 badge bg-success">Ödeme No: @Model.OrderId</span></h3>
+                    }
+           
+                    <div class="mt-4">
+                        <a href="@Url.Action("Index", "Payment")" class="btn btn-egesehir">
+                            <i class="fa-solid fa-home mx-2"></i>Ana Sayfaya Dön
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

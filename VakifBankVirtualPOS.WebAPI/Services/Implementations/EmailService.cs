@@ -56,7 +56,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                         .Replace("{{CreatedAt}}", payment.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
                         .Replace("{{CompletedAt}}", payment.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm:ss"))
                         .Replace("{{ThreeDSecureStatus}}", WebUtility.HtmlEncode(payment.ThreeDSecureStatus))
-                        .Replace("{{ErrorCode}}", WebUtility.HtmlEncode(payment.ErrorCode))
+                        .Replace("{{ResultCode}}", WebUtility.HtmlEncode(payment.ResultCode))
                         .Replace("{{ErrorMessage}}", WebUtility.HtmlEncode(payment.ErrorMessage));
             const string subject = "❌ VAKIFBANK/EGESEHIR E-Tahsilat Ödemede Hata";
             await SendInternalAsync(subject, body, to, null, null, isHtml: true, isError: true, cancellationToken);

@@ -156,7 +156,7 @@ namespace VakifBankVirtualPOS.WebAPI.Data.Context
                 .HasMaxLength(20)
                 .HasDefaultValue("Pending");
 
-            entity.Property(e => e.ErrorCode)
+            entity.Property(e => e.ResultCode)
                 .HasMaxLength(50);
 
             entity.Property(e => e.ErrorMessage)
@@ -168,8 +168,6 @@ namespace VakifBankVirtualPOS.WebAPI.Data.Context
             entity.Property(e => e.ClientIp)
                 .IsRequired()
                 .HasMaxLength(45);
-
-            entity.Property(e => e.UserId);
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired()

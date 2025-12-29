@@ -1,22 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
-using VakifBankVirtualPOS.WebUI.Models;
+using VakifBankVirtualPOS.WebUI.Models.PaymentViewModels;
+using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
 namespace VakifBankVirtualPOS.WebUI.Controllers
 {
     [Route("odeme")]
     public class PaymentController : Controller
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
+        private readonly IPaymentApiService _paymentApiService;
         private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration,
+            IPaymentApiService paymentApiService,
             ILogger<PaymentController> logger)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
+            _paymentApiService = paymentApiService;
             _logger = logger;
         }
 
@@ -34,17 +32,31 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         /// </summary>
         [HttpPost("baslat")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Initiate()
+        public async Task<IActionResult> Initiate([FromBody] PaymentInitiateViewModel model)
         {
             try
             {
-                return RedirectToAction("ThreeDSecure");
+                var result = await _paymentApiService.InitiateThreeDSecureAsync(model);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.ErrorMessage);
+                }
+
+                HttpContext.Session.SetString("ACSUrl", result.Data.ACSUrl);
+                HttpContext.Session.SetString("PAReq", result.Data.PAReq);
+                HttpContext.Session.SetString("TermUrl", result.Data.TermUrl);
+                HttpContext.Session.SetString("MD", result.Data.MD);
+                HttpContext.Session.SetString("OrderId", result.Data.OrderId);
+                HttpContext.Session.SetString("Status", result.Data.Status);
+                HttpContext.Session.SetString("Message", result.Data.Message);
+
+                return Ok(new { redirectUrl = Url.Action("ThreeDSecure", "Payment") });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ödeme başlatma hatası");
-
-                return StatusCode(500, ex);
+                return RedirectToAction(nameof(Failed));
             }
         }
 
@@ -54,43 +66,68 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         [HttpGet("3d-dogrulama")]
         public IActionResult ThreeDSecure()
         {
-            ViewBag.ACSUrl = TempData["ACSUrl"];
-            ViewBag.PAReq = TempData["PAReq"];
-            ViewBag.TermUrl = TempData["TermUrl"];
-            ViewBag.MD = TempData["MD"];
-            ViewBag.OrderId = TempData["OrderId"];
+            ViewBag.ACSUrl = HttpContext.Session.GetString("ACSUrl");
+            ViewBag.PAReq = HttpContext.Session.GetString("PAReq");
+            ViewBag.TermUrl = HttpContext.Session.GetString("TermUrl");
+            ViewBag.MD = HttpContext.Session.GetString("MD");
+            ViewBag.OrderId = HttpContext.Session.GetString("OrderId");
+
+            if (string.IsNullOrEmpty(ViewBag.ACSUrl))
+            {
+                return RedirectToAction(nameof(Failed));
+            }
 
             return View();
-        }
-
-        /// <summary>
-        /// 3D Secure callback sayfası (bankadan dönen sonuçları işler)
-        /// </summary>
-        [HttpPost("3d-bildirim")]
-        [IgnoreAntiforgeryToken]
-        public async Task<IActionResult> Callback(ThreeDCallbackViewModel model)
-        {
-            try
-            {
-                return RedirectToAction("Success");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Callback işleme hatası");
-                return StatusCode(500, ex);
-            }
         }
 
         [HttpGet("basarili/{orderId}")]
-        public IActionResult Success(string orderId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Success(string orderId, CancellationToken cancellationToken)
         {
+            ClearPaymentSession();
+            var payment = await _paymentApiService.GetPaymentByOrderIdAsync(orderId, cancellationToken);
+            if (payment.IsSuccess)
+            {
+                if (payment.Data.ResultCode != "0000")
+                {
+                    return Redirect($"/odeme/basarisiz/{orderId}");
+                }
+                return View(payment.Data);
+            }
             return View();
+
         }
 
         [HttpGet("basarisiz/{orderId?}")]
-        public IActionResult Failed(string? orderId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Failed(string? orderId, CancellationToken cancellationToken)
         {
+            ViewBag.Message = HttpContext.Session.GetString("Message") ?? "Ödeme işlemi başarısız oldu.";
+            ClearPaymentSession();
+            if (!string.IsNullOrEmpty(orderId))
+            {
+                var payment = await _paymentApiService.GetPaymentByOrderIdAsync(orderId, cancellationToken);
+                if (payment.IsSuccess)
+                {
+
+                    if (payment.Data.ResultCode == "0000")
+                    {
+                        return Redirect($"/odeme/basarili/{orderId}");
+                    }
+                    return View(payment.Data);
+                }
+            }
             return View();
+        }
+
+
+        private void ClearPaymentSession()
+        {
+            HttpContext.Session.Remove("ACSUrl");
+            HttpContext.Session.Remove("PAReq");
+            HttpContext.Session.Remove("TermUrl");
+            HttpContext.Session.Remove("MD");
+            HttpContext.Session.Remove("OrderId");
+            HttpContext.Session.Remove("Status");
+            HttpContext.Session.Remove("Message");
         }
     }
 }

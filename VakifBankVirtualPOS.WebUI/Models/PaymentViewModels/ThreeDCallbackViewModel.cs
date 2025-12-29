@@ -1,5 +1,9 @@
-namespace VakifBankVirtualPOS.WebUI.Models
+namespace VakifBankVirtualPOS.WebUI.Models.PaymentViewModels
 {
+    /// <summary>
+    /// 3D Secure Callback'ten gelen veriler ViewModel
+    /// Banka kullanıcıyı geri yönlendirdiğinde form post ile gelen bilgiler
+    /// </summary>
     public class ThreeDCallbackViewModel
     {
         public string? MD { get; set; }

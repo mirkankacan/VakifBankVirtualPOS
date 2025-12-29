@@ -6,7 +6,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Interfaces
     /// <summary>
     /// VakıfBank Sanal POS ödeme servisi interface
     /// </summary>
-    public interface IVakifBankService
+    public interface IPaymentService
     {
         /// <summary>
         /// 3D Secure işlemini başlatır (Enrollment)
@@ -23,5 +23,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Interfaces
         /// <param name="clientIp">Kullanıcının IP adresi</param>
         /// <returns>Ödeme sonucu</returns>
         Task<ServiceResult<PaymentResultDto>> CompletePaymentAsync(ThreeDCallbackDto callback, CancellationToken cancellationToken);
+
+        Task<ServiceResult<PaymentResultDto>> GetPaymentByOrderIdAsync(string orderId, CancellationToken cancellationToken);
     }
 }

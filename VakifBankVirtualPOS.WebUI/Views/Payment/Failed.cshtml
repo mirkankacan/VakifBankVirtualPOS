@@ -1,0 +1,62 @@
+﻿@model VakifBankVirtualPOS.WebUI.Models.PaymentViewModels.PaymentResultViewModel
+@{
+    ViewData["Title"] = "Ödeme Başarısız";
+}
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center">
+                    <img src="~/theme/assets/images/egesehir.png" class="img-fluid" />
+                </h5>
+                <div class="text-center">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-circle-xmark text-danger" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="text-danger mb-3">Ödeme Başarısız</h2>
+                    <p class="text-muted mb-4">Ödeme işleminiz tamamlanamadı.</p>
+
+                    @if (Model != null)
+                    {
+                        @if (!string.IsNullOrEmpty(Model.Message))
+                        {
+                            <div class="alert alert-danger">
+                                <strong>Hata Mesajı:</strong> @Model.Message
+                            </div>
+                        }
+
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-start">
+                                @if (!string.IsNullOrEmpty(Model.OrderId))
+                                {
+                                    <div class="mb-2">
+                                        <strong>Sipariş No:</strong> <span class="text-muted">@Model.OrderId</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.ResultCode))
+                                {
+                                    <div class="mb-2">
+                                        <strong>Hata Kodu:</strong> <span class="text-muted">@Model.ResultCode</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(ViewBag.Message as string))
+                    {
+                        <div class="alert alert-danger">
+                            <strong>Hata Mesajı:</strong> @ViewBag.Message
+                        </div>
+                    }
+
+                    <div class="mt-4">
+                        <a href="@Url.Action("Index", "Payment")" class="btn btn-egesehir">
+                            <i class="fa-solid fa-home mx-2"></i>Ana Sayfaya Dön
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

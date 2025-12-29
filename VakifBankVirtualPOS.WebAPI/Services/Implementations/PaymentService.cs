@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Mapster;
+using System.Net;
 using VakifBankPayment.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Common;
 using VakifBankVirtualPOS.WebAPI.Constants;
@@ -14,20 +15,20 @@ namespace VakifBankPayment.Services.Implementations
     /// <summary>
     /// VakıfBank Sanal POS ödeme servisi
     /// </summary>
-    public class VakifBankService : IVakifBankService
+    public class PaymentService : IPaymentService
     {
         private readonly VakifBankOptions _options;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ILogger<VakifBankService> _logger;
+        private readonly ILogger<PaymentService> _logger;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IClientRepository _clientRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IEmailService _emailService;
 
-        public VakifBankService(
+        public PaymentService(
             VakifBankOptions options,
             IHttpClientFactory httpClientFactory,
-            ILogger<VakifBankService> logger,
+            ILogger<PaymentService> logger,
             IPaymentRepository paymentRepository,
             IClientRepository clientRepository,
             IHttpContextAccessor httpContextAccessor,
@@ -40,6 +41,30 @@ namespace VakifBankPayment.Services.Implementations
             _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+        }
+
+        public async Task<ServiceResult<PaymentResultDto>> GetPaymentByOrderIdAsync(string orderId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var payment = await _paymentRepository.GetByOrderIdAsync(orderId, cancellationToken);
+
+                if (payment == null)
+                {
+                    return ServiceResult<PaymentResultDto>.Error(
+                        "Ödeme Bulunamadı",
+                        $"{orderId} kodlu ödeme bulunamadı",
+                        HttpStatusCode.NotFound);
+                }
+                var mappedPayment = payment.Adapt<PaymentResultDto>();
+                mappedPayment.IsSuccess = payment.Status.ToUpper() == "SUCCESS" && payment.ResultCode == "0000" ? true : false;
+                return ServiceResult<PaymentResultDto>.SuccessAsOk(payment.Adapt<PaymentResultDto>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ödeme kaydı getirilemedi. OrderId: {OrderId}", orderId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -264,12 +289,12 @@ namespace VakifBankPayment.Services.Implementations
                         status: "Failed",
                         cancellationToken: cancellationToken,
                         transactionId: paymentResult.TransactionId,
-                        errorCode: paymentResult.ErrorCode,
+                        resultCode: paymentResult.ResultCode,
                         errorMessage: paymentResult.Message
                     );
                     await _emailService.SendPaymentFailedMailAsync(orderId, cancellationToken);
                     _logger.LogError("Ödeme başarısız. OrderId: {OrderId}, ErrorCode: {ErrorCode}, Message: {Message}",
-                        orderId, paymentResult.ErrorCode, paymentResult.Message);
+                        orderId, paymentResult.ResultCode, paymentResult.Message);
 
                     return ServiceResult<PaymentResultDto>.Error(
                         "Ödeme Başarısız",
@@ -281,6 +306,7 @@ namespace VakifBankPayment.Services.Implementations
                     orderId: orderId,
                     status: "Success",
                     cancellationToken: cancellationToken,
+                    resultCode: paymentResult.ResultCode,
                     transactionId: paymentResult.TransactionId,
                     authCode: paymentResult.AuthCode
                 );
@@ -371,7 +397,7 @@ namespace VakifBankPayment.Services.Implementations
                     TransactionId = transactionId,
                     AuthCode = authCode,
                     OrderId = orderId,
-                    ErrorCode = resultCode
+                    ResultCode = resultCode
                 };
             }
             catch (Exception ex)

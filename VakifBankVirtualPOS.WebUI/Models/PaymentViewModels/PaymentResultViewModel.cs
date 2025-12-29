@@ -1,10 +1,9 @@
-﻿namespace VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos
+namespace VakifBankVirtualPOS.WebUI.Models.PaymentViewModels
 {
     /// <summary>
-    /// Ödeme İşlemi Sonuç DTO
-    /// Kullanıcıya döndürülen nihai sonuç
+    /// Ödeme İşlemi Sonuç ViewModel
     /// </summary>
-    public class PaymentResultDto
+    public class PaymentResultViewModel
     {
         public bool IsSuccess { get; set; }
         public string Message { get; set; }

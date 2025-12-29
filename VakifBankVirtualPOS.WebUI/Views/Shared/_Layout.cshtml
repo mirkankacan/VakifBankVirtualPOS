@@ -7,11 +7,11 @@
     <meta name="author" content="İdeaktif Danışmanlık ve Yazılım Ltd.">
 
     <!-- Favicon dosyaları -->
-    <link rel="icon" type="image/png" sizes="16x16" href="~/favicons/favicon-16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="~/favicons/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="72x72" href="~/favicons/favicon-72.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="~/favicons/favicon-96.png">
-    <link rel="shortcut icon" href="~/favicons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/theme/assets/favicons/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="30x30" href="~/theme/assets/favicons/favicon-30.png">
+    <link rel="icon" type="image/png" sizes="40x40" href="~/theme/assets/favicons/favicon-40.png">
+    <link rel="icon" type="image/png" sizes="80x80" href="~/theme/assets/favicons/favicon-80.png">
+    <link rel="shortcut icon" href="~/theme/assets/favicons/favicon-30.png">
     <!-- Title -->
     <title>@ViewData["Title"] • Egeşehir E-Tahsilat</title>
 
@@ -26,6 +26,7 @@
     <link href="~/theme/assets/css/main.min.css" rel="stylesheet">
     <link href="~/theme/assets/css/custom.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.css" rel="stylesheet">
+
   <style>
         .btn-egesehir,
         .btn-egesehir.disabled,
@@ -71,11 +72,15 @@
                 min-height: 100vh;
                 position: relative;
             }
+
+        .text-egesehir {
+            color: #9c182f !important;
+        }
   </style>
 </head>
 <body>
     <div class='loader'>
-        <div class='spinner-grow text-primary' role='status'>
+        <div class='spinner-grow text-egesehir' role='status'>
             <span class='sr-only'></span>
         </div>
     </div>
@@ -111,14 +116,11 @@
     <script src="https://cdn.jsdelivr.net/npm/tippy.js/dist/tippy.umd.min.js"></script>
     <script src="~/theme/assets/plugins/bootstrap/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/js/all.min.js"
-            integrity="sha512-gBYquPLlR76UWqCwD06/xwal4so02RjIR0oyG1TIhSGwmBTRrIkQbaPehPF8iwuY9jFikDHMGEelt0DtY7jtvQ=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/js/all.min.js" integrity="sha512-gBYquPLlR76UWqCwD06/xwal4so02RjIR0oyG1TIhSGwmBTRrIkQbaPehPF8iwuY9jFikDHMGEelt0DtY7jtvQ=="crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="~/theme/assets/plugins/perfectscroll/perfect-scrollbar.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastr/toastr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2/dist/sweetalert2.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="~/theme/assets/plugins/blockui/jquery.blockUI.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
     <script src="~/theme/assets/js/main.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 

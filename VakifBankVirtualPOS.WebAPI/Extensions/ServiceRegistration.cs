@@ -39,12 +39,12 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddDistributedMemoryCache();
             services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.IdleTimeout = TimeSpan.FromMinutes(5);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Strict;
-                options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.Session";
+                options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebAPISession";
             });
             services.AddRateLimiter(options =>
             {
@@ -217,7 +217,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IClientRepository, ClientRepository>();
             services.AddScoped<IClientService, ClientService>();
-            services.AddScoped<IVakifBankService, VakifBankService>();
+            services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IHybsService, HybsService>();
             return services;
         }

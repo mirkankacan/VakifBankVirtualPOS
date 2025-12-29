@@ -19,7 +19,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
             // 3D Secure başlatma
             group.MapPost("/initiate", async (
                 [FromBody] PaymentInitiateRequestDto request,
-                [FromServices] IVakifBankService paymentService,
+                [FromServices] IPaymentService paymentService,
                 CancellationToken cancellationToken) =>
             {
                 var result = await paymentService.InitiateThreeDSecureAsync(request, cancellationToken);
@@ -28,20 +28,57 @@ namespace VakifBankPayment.WebAPI.Endpoints
             .WithName("InitiateThreeDSecure")
             .WithSummary("3D Secure ödeme işlemini başlatır")
             .RequireRateLimiting("payment");
+            group.MapGet("/{orderId}", async (
+            string orderId,
+             [FromServices] IPaymentService paymentService,
+             CancellationToken cancellationToken) =>
+            {
+
+                var result = await paymentService.GetPaymentByOrderIdAsync(orderId, cancellationToken);
+                return result.ToGenericResult();
+            })
+         .WithName("GetPaymentByOrderId")
+         .WithSummary("Ödeme no'suna göre bir ödemeyi getirir")
+         .RequireRateLimiting("payment");
 
             // 3D Secure callback
-            group.MapPost("/3d-callback", async (
-                [FromForm] ThreeDCallbackDto callback,
-                [FromServices] IVakifBankService paymentService,
+            group.MapPost("/3d-callback", async ([FromForm] ThreeDCallbackDto callback,
+                [FromServices] IPaymentService paymentService, HttpContext context,
                 CancellationToken cancellationToken) =>
             {
                 var result = await paymentService.CompletePaymentAsync(callback, cancellationToken);
-                return result.ToGenericResult();
+                var redirectUrl = result.IsSuccess
+                     ? $"https://localhost:8484/odeme/basarili/{result.Data.OrderId}"
+                     : $"https://localhost:8484/odeme/basarisiz/{result.Data.OrderId}";
+
+                var html = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <meta http-equiv=""refresh"" content=""0;url={redirectUrl}"">
+    <title>Yönlendiriliyor...</title>
+</head>
+<body>
+    <div style=""text-align: center; padding: 50px; font-family: Arial, sans-serif;"">
+        <h2>Ödeme işlemi tamamlandı</h2>
+        <p>Yönlendiriliyor...</p>
+        <script>
+            window.location.href = '{redirectUrl}';
+        </script>
+    </div>
+</body>
+</html>";
+
+                context.Response.ContentType = "text/html; charset=utf-8";
+                await context.Response.WriteAsync(html, cancellationToken);
+
+                return Results.Empty;
             })
             .WithName("ThreeDCallback")
             .WithSummary("3D Secure doğrulama sonrası callback")
             .DisableAntiforgery()
-            .RequireRateLimiting("payment");
+            .AllowAnonymous();
         }
     }
 }

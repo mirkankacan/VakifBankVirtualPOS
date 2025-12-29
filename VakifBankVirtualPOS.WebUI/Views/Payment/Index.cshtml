@@ -2,16 +2,21 @@
     ViewData["Title"] = "Ödeme Yap";
 }
 
-<div class="row">
+<div class="row" id="searchFormContainer">
     <div class="col">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title text-center"><img src="https://testegesehirv2.izmirteknoloji.com.tr/images/KurumsalKimlik/d77ce8a0-44da-43b7-99a4-cfc75e6cfee2.png" /></h5>
+                <h5 class="card-title text-center">
+                    <img src="~/theme/assets/images/egesehir.png" class="img-fluid" />
+                </h5>
                 <form class="row g-3 needs-validation" novalidate id="searchForm">
                     <div class="col-md-12">
                         <label for="txtTaxNumber" class="form-label">Vergi Numarası / TC Kimlik Numarası</label>
                         <input type="text" class="form-control" id="txtTaxNumber" value="" required>
-                        <div id="taxHelp" class="form-text">10 hane: Vergi numarası, 11 hane: TC kimlik numarası ile arama yapar. Numarayı girip 'Cari Ara' butonuna tıklayın.</div>
+                        <div id="taxHelp" class="form-text">
+                            10 hane: Vergi numarası, 11 hane: TC kimlik numarası ile
+                            arama yapar. Numarayı girip 'Cari Ara' butonuna tıklayın.
+                        </div>
                         <div class="valid-feedback">
                         </div>
                         <div class="invalid-feedback">
@@ -19,28 +24,113 @@
                         </div>
                     </div>
                     <div class="col-12">
-                        <button class="btn btn-egesehir w-100" type="submit"><i class="fa-solid fa-magnifying-glass mx-2"></i>Cari Ara</button>
+                        <button class="btn btn-egesehir w-100" type="submit">
+                            <i class="fa-solid fa-magnifying-glass mx-2"></i>Cari Ara
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+<div class="row d-none" id="paymentFormContainer">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center">
+                    <img src="~/theme/assets/images/egesehir.png" class="img-fluid" />
+                </h5>
+                <form class="row g-3 needs-validation" novalidate id="paymentForm">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-12 text-center card-description">
+                        <h3 id="clientName"></h3>
+                        <h4>Carisi İçin Ödeme Sayfası</h4>
+                    </div>
+                    <div class="col-md-12">
+                        <label for="txtCardHolderName" class="form-label">Kart Üstündeki İsim Soyisim</label>
+                        <input type="text" class="form-control" id="txtCardHolderName" value="" required>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir isim soyisim giriniz.
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <label for="txtCardNumber" class="form-label">Kart Numarası</label>
+                        <input type="text" class="form-control" id="txtCardNumber" value=""
+                            placeholder="0000 0000 0000 0000" required>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir kart numarası giriniz.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="txtExpMonthYear" class="form-label">Kart Son Kullanma Tarihi</label>
+                        <input type="text" class="form-control" id="txtExpMonthYear" placeholder="AA/YY (örn: 12/25)"
+                            value="" required>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir son kullanma tarihi giriniz (AA/YY formatında).
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="txtCvv" class="form-label">Kart CVV/CVC Kodu</label>
+                        <input type="text" class="form-control" id="txtCvv" value="" placeholder="000" required>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir CVV/CVC kodu giriniz.
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <label for="txtAmount" class="form-label">Tutar</label>
+                        <input type="text" class="form-control" id="txtAmount" value="" required>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir tutar giriniz.
+                        </div>
+                    </div>
 
+                    <div class="col-12">
+                        <button class="btn btn-outline-egesehir w-100" type="submit">
+                            <i class="fa-solid fa-credit-card mx-2"></i>Ödeme Yap
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
     <script>
+        // Cari bilgilerini saklamak için global değişken
+        let clientData = null;
+
         $(document).ready(async function () {
-            // URL parametrelerini işle
+            $('#txtTaxNumber').mask('00000000000'); // 11 hane (TC veya Vergi No)
+            $('#txtCardNumber').mask('0000 0000 0000 0000'); // Kart numarası
+            $('#txtExpMonthYear').mask('00/00'); // AA/YY formatı
+            $('#txtCvv').mask('0000'); // CVV (3-4 hane)
+            $('#txtAmount').mask('#.##0,00', { reverse: true }); // Tutar (Türkçe format)
+
             await processHybsParameters();
 
-            // Form submit işlemi
+            // Cari arama form submit işlemi
             $('#searchForm').on('submit', async function (e) {
                 e.preventDefault();
-                await handleFormSubmit();
+                await handleSearchSubmit();
+            });
+
+            // Ödeme form submit işlemi
+            $('#paymentForm').on('submit', async function (e) {
+                e.preventDefault();
+                await handlePaymentSubmit();
             });
         });
 
-        // URL parametrelerini işleyen async function
         async function processHybsParameters() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -54,33 +144,24 @@
                     // JSON'dan VergiNo, BelgeNo, Tutar değerlerini al
                     if (jsonData.VergiNo) {
                         $('#txtTaxNumber').val(jsonData.VergiNo);
-                        
-                        // /cari/no/{jsonData.VergiNo} adresine GET isteği
+
                         try {
                             const apiUrl = `/cari/no/${jsonData.VergiNo}`;
                             const data = await fetchClientData(apiUrl);
+                            clientData = data;
+                            showPaymentForm(data, jsonData);
                         } catch (error) {
-                            console.error('Cari bilgileri getirilirken hata:', error);
                             toastr.error('Cari bilgileri getirilirken bir hata oluştu.');
                         }
                     }
-
-                    // BelgeNo ve Tutar değerlerini sakla (ileride kullanılabilir)
-                    if (jsonData.BelgeNo) {
-                        $('#txtTaxNumber').data('belgeNo', jsonData.BelgeNo);
-                    }
-                    if (jsonData.Tutar) {
-                        $('#txtTaxNumber').data('tutar', jsonData.Tutar);
-                    }
                 }
             } catch (error) {
-                console.error('Base64 decode veya JSON parse hatası:', error);
                 toastr.error('URL parametresi işlenirken bir hata oluştu.');
             }
         }
 
         // Form submit işlemini yöneten async function
-        async function handleFormSubmit() {
+        async function handleSearchSubmit() {
             try {
                 const taxNumber = $('#txtTaxNumber').val().trim();
 
@@ -109,13 +190,182 @@
 
                 // Fetch API ile GET isteği
                 const data = await fetchClientData(apiUrl);
+                clientData = data;
+
+                if (!data) {
+                    toastr.error('Cari bilgileri alınamadı.');
+                    return;
+                }
 
                 toastr.success('Cari bilgileri başarıyla getirildi.');
-                console.log('Cari bilgileri:', data);
-                // Burada gelen veriyi işleyebilirsiniz
+                showPaymentForm(data);
             } catch (error) {
-                console.error('Hata:', error);
                 toastr.error(error.message || 'Cari bilgileri getirilirken bir hata oluştu.');
+            }
+        }
+
+        // Ödeme formunu gösteren function
+        function showPaymentForm(clientData, hybsData = null) {
+            if (!clientData) {
+                return;
+            }
+
+            const clientCode = clientData?.carI_KOD;
+
+            if (clientData && clientCode) {
+                // Cari bilgilerini sakla
+                $('#paymentForm').data('clientCode', clientCode);
+
+                // HYBS'den gelen tutar varsa kullan ve input'a yaz
+                if (hybsData && hybsData.Tutar) {
+                    $('#paymentForm').data('amount', hybsData.Tutar);
+                    $('#txtAmount').val(hybsData.Tutar);
+                    $('#txtAmount').prop('readonly', true);
+                } else {
+                    // HYBS'den tutar gelmediyse input'u temizle ve düzenlenebilir yap
+                    $('#txtAmount').val('');
+                    $('#txtAmount').prop('readonly', false);
+                }
+
+                // BelgeNo varsa sakla
+                if (hybsData && hybsData.BelgeNo) {
+                    $('#paymentForm').data('documentNo', hybsData.BelgeNo);
+                }
+                $("#clientName").text(clientData.carI_ISIM);
+                // Cari arama kartını gizle
+                $('#searchFormContainer').addClass('d-none');
+
+                // Ödeme formunu göster
+                $('#paymentFormContainer').removeClass('d-none');
+
+                $('html, body').animate({
+                    scrollTop: $('#paymentFormContainer').offset().top
+                }, 200);
+            } else {
+                toastr.warning('Cari bilgileri alındı ancak cari kodu bulunamadı. Lütfen tekrar deneyiniz.');
+            }
+        }
+
+        // Ödeme form submit işlemini yöneten async function
+        async function handlePaymentSubmit() {
+            const submitButton = $('#paymentForm button[type="submit"]');
+            const originalButtonContent = submitButton.html();
+            const paymentCard = $('#paymentFormContainer .card');
+
+            try {
+                // Form validasyonu
+                const cardHolderName = $('#txtCardHolderName').val().trim();
+                const cardNumber = $('#txtCardNumber').val().trim().replace(/\s/g, '');
+                const expMonthYear = $('#txtExpMonthYear').val().trim();
+                const cvv = $('#txtCvv').val().trim();
+                const amountInput = $('#txtAmount').val().trim();
+
+                if (!cardHolderName || !cardNumber || !expMonthYear || !cvv) {
+                    toastr.error('Lütfen tüm alanları doldurunuz.');
+                    return;
+                }
+
+                // Son kullanma tarihi format kontrolü (AA/YY)
+                if (!/^\d{2}\/\d{2}$/.test(expMonthYear)) {
+                    toastr.error('Son kullanma tarihi AA/YY formatında olmalıdır (örn: 12/25).');
+                    return;
+                }
+
+                // CVV kontrolü
+                if (!/^\d{3,4}$/.test(cvv)) {
+                    toastr.error('CVV 3 veya 4 haneli olmalıdır.');
+                    return;
+                }
+
+                // Kart numarası kontrolü
+                if (!/^\d{13,19}$/.test(cardNumber)) {
+                    toastr.error('Geçerli bir kart numarası giriniz.');
+                    return;
+                }
+
+                // Cari bilgilerini al
+                const clientCode = $('#paymentForm').data('clientCode');
+                const hybsAmount = $('#paymentForm').data('amount');
+                const documentNo = $('#paymentForm').data('documentNo');
+
+                if (!clientCode) {
+                    toastr.error('Cari bilgileri bulunamadı. Lütfen önce cari araması yapınız.');
+                    return;
+                }
+
+                // Tutar kontrolü: Önce HYBS'den gelen varsa onu kullan, yoksa input'tan al
+                let amount = hybsAmount;
+                if (!amount || amount <= 0) {
+                    // HYBS'den tutar gelmediyse input'tan al
+                    if (!amountInput) {
+                        toastr.error('Lütfen tutar giriniz.');
+                        return;
+                    }
+                    // Mask formatını temizle (1.000,00 -> 1000.00)
+                    // Noktaları kaldır (binlik ayırıcı), virgülü noktaya çevir (ondalık ayırıcı)
+                    let cleanAmount = amountInput.replace(/\./g, '').replace(',', '.');
+                    amount = parseFloat(cleanAmount);
+                    if (isNaN(amount) || amount <= 0) {
+                        toastr.error('Geçerli bir tutar giriniz.');
+                        return;
+                    }
+                } else {
+                    // HYBS'den gelen tutarı kullan
+                    amount = parseFloat(hybsAmount);
+                }
+
+                // CSRF token'ı al
+                const csrfToken = $('input[name="__RequestVerificationToken"]').val();
+                if (!csrfToken) {
+                    toastr.error('Güvenlik token\'ı bulunamadı. Sayfayı yenileyiniz.');
+                    return;
+                }
+
+                // Request body oluştur
+                const requestBody = {
+                    cardNumber: cardNumber,
+                    expiryDate: expMonthYear,
+                    cvv: cvv,
+                    cardHolderName: cardHolderName,
+                    amount: amount,
+                    clientCode: clientCode,
+                    documentNo: documentNo || null
+                };
+             
+                // Butonu disable et ve loading göster
+                submitButton.prop('disabled', true);
+                submitButton.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Ödeme Başlatılıyor...');
+
+                // POST isteği
+                const response = await fetch('/odeme/baslat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ödeme başlatılırken bir hata oluştu.');
+                }
+
+                const result = await response.json();
+
+                // 3D Secure sayfasına yönlendir
+                if (result && result.redirectUrl) {
+                 
+                    submitButton.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Yönlendiriliyor...');
+                    window.location.href = result.redirectUrl;
+                } else {
+                    throw new Error('Yönlendirme URL\'si alınamadı.');
+                }
+            } catch (error) {
+                submitButton.prop('disabled', false);
+                submitButton.html(originalButtonContent);
+
+                toastr.error(error.message || 'Ödeme işlemi sırasında bir hata oluştu.');
             }
         }
 

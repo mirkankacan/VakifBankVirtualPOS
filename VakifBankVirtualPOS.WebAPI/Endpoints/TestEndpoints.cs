@@ -18,7 +18,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
 
             // 3D Secure başlatma
             group.MapPost("/initiate", async (
-                [FromServices] IVakifBankService paymentService,
+                [FromServices] IPaymentService paymentService,
                 CancellationToken cancellationToken) =>
             {
                 var request = new PaymentInitiateRequestDto();

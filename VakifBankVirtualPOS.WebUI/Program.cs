@@ -10,9 +10,17 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = "__RequestVerificationToken";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
-
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(5);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebUISession";
+});
 // HttpClient ve API servisleri
 builder.Services.AddHttpClient<IApiService, ApiService>(client =>
 {
@@ -37,7 +45,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseSession();
 app.UseAuthorization();
 
 app.MapStaticAssets();

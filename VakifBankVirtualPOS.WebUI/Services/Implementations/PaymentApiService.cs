@@ -1,5 +1,5 @@
 using VakifBankVirtualPOS.WebUI.Common;
-using VakifBankVirtualPOS.WebUI.Models;
+using VakifBankVirtualPOS.WebUI.Models.PaymentViewModels;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
 namespace VakifBankVirtualPOS.WebUI.Services.Implementations
@@ -19,14 +19,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
 
         private const string BaseEndpoint = "api/payments";
 
-        public async Task<ApiResponse<EnrollmentResponseDto>> InitiateThreeDSecureAsync(PaymentInitiateViewModel model, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<EnrollmentResponseViewModel>> InitiateThreeDSecureAsync(PaymentInitiateViewModel model, CancellationToken cancellationToken = default)
         {
-            return await _apiService.PostAsync<EnrollmentResponseDto>($"{BaseEndpoint}/", model, cancellationToken);
+            return await _apiService.PostAsync<EnrollmentResponseViewModel>($"{BaseEndpoint}/initiate", model, cancellationToken);
         }
 
-        public async Task<ApiResponse<PaymentResultDto>> CompletePaymentAsync(ThreeDCallbackViewModel model, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<PaymentResultViewModel>> GetPaymentByOrderIdAsync(string orderId, CancellationToken cancellationToken = default)
         {
-            return await _apiService.PostAsync<PaymentResultDto>($"{BaseEndpoint}/", model, cancellationToken);
+            return await _apiService.GetAsync<PaymentResultViewModel>($"{BaseEndpoint}/{orderId}", cancellationToken);
         }
     }
 }

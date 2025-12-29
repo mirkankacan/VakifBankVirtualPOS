@@ -17,6 +17,6 @@ namespace VakifBankVirtualPOS.WebAPI.Repositories.Interfaces
         /// </summary>
         Task<IDT_VAKIFBANK_ODEME?> GetByOrderIdAsync(string orderId, CancellationToken cancellationToken);
 
-        Task<IDT_VAKIFBANK_ODEME?> UpdateByOrderIdAsync(string orderId, string status, CancellationToken cancellationToken, string? transactionId = null, string? authCode = null, string? errorCode = null, string? errorMessage = null);
+        Task<IDT_VAKIFBANK_ODEME?> UpdateByOrderIdAsync(string orderId, string status, CancellationToken cancellationToken, string? transactionId = null, string? authCode = null, string? resultCode = null, string? errorMessage = null);
     }
 }

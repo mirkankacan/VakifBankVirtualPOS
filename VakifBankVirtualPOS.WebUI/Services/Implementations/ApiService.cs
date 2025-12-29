@@ -14,7 +14,7 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = null,
             PropertyNameCaseInsensitive = true,
             WriteIndented = false,
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping

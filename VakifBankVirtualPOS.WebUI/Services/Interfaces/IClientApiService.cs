@@ -1,5 +1,5 @@
 ﻿using VakifBankVirtualPOS.WebUI.Common;
-using VakifBankVirtualPOS.WebUI.Models;
+using VakifBankVirtualPOS.WebUI.Models.ClientViewModels;
 
 namespace VakifBankVirtualPOS.WebUI.Services.Interfaces
 {
