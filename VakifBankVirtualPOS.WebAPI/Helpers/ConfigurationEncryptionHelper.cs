@@ -3,9 +3,36 @@ using System.Text;
 
 namespace VakifBankVirtualPOS.WebAPI.Helpers
 {
+    /// <summary>
+    /// Configuration dosyaları için şifreleme/çözme helper sınıfı
+    /// </summary>
     public static class ConfigurationEncryptionHelper
     {
-        private static readonly byte[] _entropy = Encoding.UTF8.GetBytes("VakifBankEgesehir2024!SecureKey#POS");
+        private const string EnvVarName = "EGESEHIR_VIRTUAL_POS_ENCRYPTION_KEY";
+
+        /// <summary>
+        /// Entropy değerini environment variable'dan veya default'tan alır
+        /// </summary>
+        private static byte[] GetEntropy()
+        {
+            var entropyKey = Environment.GetEnvironmentVariable(EnvVarName);
+
+            if (string.IsNullOrEmpty(entropyKey))
+            {
+                throw new InvalidOperationException(
+                    $"❌ KRİTİK HATA: Environment variable '{EnvVarName}' tanımlanmamış!\n\n" +
+                    $"Çözüm:\n" +
+                    $"PowerShell (Administrator):\n" +
+                    $"[Environment]::SetEnvironmentVariable(\"{EnvVarName}\", \"YourSecureKey123!\", \"Machine\")\n" +
+                    $"iisreset\n\n" +
+                    $"veya User seviyesinde (Development):\n" +
+                    $"[Environment]::SetEnvironmentVariable(\"{EnvVarName}\", \"YourSecureKey123!\", \"User\")\n"
+                );
+            }
+
+            Console.WriteLine($"✅ Encryption key environment variable'dan yüklendi.");
+            return Encoding.UTF8.GetBytes(entropyKey);
+        }
 
         /// <summary>
         /// JSON dosyasını şifreler
@@ -17,6 +44,8 @@ namespace VakifBankVirtualPOS.WebAPI.Helpers
                 if (!File.Exists(inputPath))
                     throw new FileNotFoundException($"Dosya bulunamadı: {inputPath}");
 
+                var entropy = GetEntropy();
+
                 // Dosyayı oku
                 var jsonContent = File.ReadAllText(inputPath);
                 var plainBytes = Encoding.UTF8.GetBytes(jsonContent);
@@ -24,7 +53,7 @@ namespace VakifBankVirtualPOS.WebAPI.Helpers
                 // Şifrele (Windows DPAPI)
                 var encryptedBytes = ProtectedData.Protect(
                     plainBytes,
-                    _entropy,
+                    entropy,
                     DataProtectionScope.LocalMachine
                 );
 
@@ -60,6 +89,8 @@ namespace VakifBankVirtualPOS.WebAPI.Helpers
                 if (!File.Exists(encryptedPath))
                     throw new FileNotFoundException($"Şifreli dosya bulunamadı: {encryptedPath}");
 
+                var entropy = GetEntropy();
+
                 // Base64'ten byte array'e
                 var base64 = File.ReadAllText(encryptedPath);
                 var encryptedBytes = Convert.FromBase64String(base64);
@@ -67,7 +98,7 @@ namespace VakifBankVirtualPOS.WebAPI.Helpers
                 // Şifreyi çöz
                 var decryptedBytes = ProtectedData.Unprotect(
                     encryptedBytes,
-                    _entropy,
+                    entropy,
                     DataProtectionScope.LocalMachine
                 );
 
@@ -81,8 +112,7 @@ namespace VakifBankVirtualPOS.WebAPI.Helpers
             catch (CryptographicException ex)
             {
                 throw new Exception(
-                    "Şifre çözme hatası! Bu dosya farklı bir makinede şifrelenmiş olabilir. " +
-                    "DataProtectionScope.LocalMachine ile şifrelenen dosyalar sadece aynı makinede çözümlenebilir.",
+                    "Şifre çözme hatası! Bu dosya farklı bir makinede şifrelenmiş olabilir veya encryption key hatalı.",
                     ex
                 );
             }

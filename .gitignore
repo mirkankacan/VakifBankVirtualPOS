@@ -21,13 +21,8 @@ appsettings.Development.json
 appsettings.*.json
 !appsettings.json
 
-# Secrets klasörü
-Secrets/
-C:/Secrets/
-
 # Tool'lar (opsiyonel - eğer paylaşmak istemiyorsanız)
-Tools/EncryptConfiguration.cs
-IdeKusgozManagement.WebAPI/wwwroot/Uploads/
+VakifBankVirtualPOS.WebAPI/Tools/EncryptConfiguration.cs
 
 **/Uploads/
 *.log

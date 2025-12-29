@@ -44,23 +44,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
 app.UseRouting();
 app.UseSession();
-app.UseAuthorization();
 
 app.MapStaticAssets();
-app.Use(async (context, next) =>
-{
-    if (context.Request.Path == "/")
-    {
-        context.Response.Redirect("/odeme");
-        return;
-    }
-    await next();
-});
+
+app.MapGet("/", () => Results.Redirect("/odeme"));
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Payment}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Payment}/{action=Index}/{id?}");
 
 app.Run();
