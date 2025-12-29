@@ -1,53 +1,126 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - VakifBankVirtualPOS.WebUI</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/VakifBankVirtualPOS.WebUI.styles.css" asp-append-version="true" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="İdeaktif Danışmanlık ve Yazılım Ltd.">
+
+    <!-- Favicon dosyaları -->
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicons/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="~/favicons/favicon-72.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="~/favicons/favicon-96.png">
+    <link rel="shortcut icon" href="~/favicons/favicon-32.png">
+    <!-- Title -->
+    <title>@ViewData["Title"] • Egeşehir E-Tahsilat</title>
+
+    <!-- Styles -->
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,700,800&display=swap" rel="stylesheet">
+    <link href="~/theme/assets/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+          integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="~/theme/assets/plugins/perfectscroll/perfect-scrollbar.css" rel="stylesheet">
+    <!-- Theme Styles -->
+    <link href="~/theme/assets/css/main.min.css" rel="stylesheet">
+    <link href="~/theme/assets/css/custom.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.css" rel="stylesheet">
+  <style>
+        .btn-egesehir,
+        .btn-egesehir.disabled,
+        .btn-egesehir:disabled {
+            background-color: #9c182f;
+            border-color: #9c182f;
+            color: #ffffff;
+        }
+
+            .btn-egesehir:hover,
+            .btn-egesehir.focus,
+            .btn-egesehir:focus,
+            .btn-egesehir:not(:disabled):not(.disabled).active,
+            .btn-egesehir:not(:disabled):not(.disabled):active {
+                background-color: #9c182f;
+                border-color: #9c182f;
+                color: #ffffff;
+                box-shadow: 0 7px 23px -8px #ffffff;
+            }
+
+
+        .btn-outline-egesehir {
+            color: #9c182f;
+            border-color: #9c182f;
+        }
+
+            .btn-outline-egesehir:hover,
+            .btn-outline-egesehir.focus,
+            .btn-outline-egesehir:focus,
+            .btn-outline-egesehir:not(:disabled):not(.disabled).active,
+            .btn-outline-egesehir:not(:disabled):not(.disabled):active {
+                color: #ffffff;
+                border-color: #9c182f;
+                background-color: #9c182f;
+                box-shadow: 0 7px 23px -8px #9c182f;
+            }
+            .page-container {
+            background-image: url('/theme/assets/images/City.png');
+            background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                min-height: 100vh;
+                position: relative;
+            }
+  </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">VakifBankVirtualPOS.WebUI</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Payment" asp-action="Index">Ödeme</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+    <div class='loader'>
+        <div class='spinner-grow text-primary' role='status'>
+            <span class='sr-only'></span>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - VakifBankVirtualPOS.WebUI - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <div class="page-container">
+        <div class="page-content">
+            <div class="main-wrapper">
+                @RenderBody()
+            </div>
+
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+        <footer class="footer">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end d-none d-sm-block">
+                            <a href="https://www.ideaktif.com.tr" target="_blank" style="color:#5b5b5b">
+                                2025 © İdeaktif
+                                Danışmanlık ve Yazılım Ltd.
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Javascripts -->
+    <script src="~/theme/assets/plugins/jquery/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@popperjs/core/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js/dist/tippy.umd.min.js"></script>
+    <script src="~/theme/assets/plugins/bootstrap/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/js/all.min.js"
+            integrity="sha512-gBYquPLlR76UWqCwD06/xwal4so02RjIR0oyG1TIhSGwmBTRrIkQbaPehPF8iwuY9jFikDHMGEelt0DtY7jtvQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="~/theme/assets/plugins/perfectscroll/perfect-scrollbar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastr/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="~/theme/assets/plugins/blockui/jquery.blockUI.js"></script>
+    <script src="~/theme/assets/js/main.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

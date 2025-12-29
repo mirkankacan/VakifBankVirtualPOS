@@ -1,8 +1,29 @@
+using VakifBankVirtualPOS.WebUI.Services.Implementations;
+using VakifBankVirtualPOS.WebUI.Services.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
-builder.Services.AddHttpClient();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "__RequestVerificationToken";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
+
+// HttpClient ve API servisleri
+builder.Services.AddHttpClient<IApiService, ApiService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"]!;
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// API Servisleri
+builder.Services.AddScoped<IPaymentApiService, PaymentApiService>();
+builder.Services.AddScoped<IClientApiService, ClientApiService>();
 
 var app = builder.Build();
 
@@ -20,10 +41,18 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
-
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path == "/")
+    {
+        context.Response.Redirect("/odeme");
+        return;
+    }
+    await next();
+});
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Payment}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.Run();

@@ -58,7 +58,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                         .Replace("{{ThreeDSecureStatus}}", WebUtility.HtmlEncode(payment.ThreeDSecureStatus))
                         .Replace("{{ErrorCode}}", WebUtility.HtmlEncode(payment.ErrorCode))
                         .Replace("{{ErrorMessage}}", WebUtility.HtmlEncode(payment.ErrorMessage));
-            const string subject = "❌ VAKIFBANK/EGESEHIR Ödemede Hata";
+            const string subject = "❌ VAKIFBANK/EGESEHIR E-Tahsilat Ödemede Hata";
             await SendInternalAsync(subject, body, to, null, null, isHtml: true, isError: true, cancellationToken);
         }
 
@@ -99,7 +99,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                           .Replace("{{CardBrand}}", WebUtility.HtmlEncode(payment.CardBrand))
                           .Replace("{{CardHolderName}}", WebUtility.HtmlEncode(payment.CardHolderName))
                           .Replace("{{MaskedCardNumber}}", WebUtility.HtmlEncode(payment.MaskedCardNumber));
-            const string subject = "✅ VAKIFBANK/EGESEHIR Ödeme Başarılı";
+            const string subject = "✅ VAKIFBANK/EGESEHIR E-Tahsilat Ödemesi Başarılı";
             await SendInternalAsync(subject, body, null, null, null, isHtml: true, isError: false, cancellationToken);
         }
 

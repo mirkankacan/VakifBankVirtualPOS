@@ -5,41 +5,41 @@
 
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
+        <div class="card shadow-sm border-0">
             <div class="card-header @(Model.IsSuccess ? "bg-success" : "bg-danger") text-white">
                 <h3 class="card-title mb-0">
                     @if (Model.IsSuccess)
                     {
-                        <i class="bi bi-check-circle"></i> <text>Ödeme Başarılı</text>
+                        <text>✓ Ödeme Başarılı</text>
                     }
                     else
                     {
-                        <i class="bi bi-x-circle"></i> <text>Ödeme Başarısız</text>
+                        <text>✗ Ödeme Başarısız</text>
                     }
                 </h3>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="text-center mb-4">
                     @if (Model.IsSuccess)
                     {
                         <div class="mb-3">
-                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="9 12 11 14 15 10"></polyline>
                             </svg>
                         </div>
-                        <h4 class="text-success">Ödemeniz başarıyla tamamlandı!</h4>
+                        <h4 class="text-success fw-bold">Ödemeniz başarıyla tamamlandı!</h4>
                     }
                     else
                     {
                         <div class="mb-3">
-                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="15" y1="9" x2="9" y2="15"></line>
                                 <line x1="9" y1="9" x2="15" y2="15"></line>
                             </svg>
                         </div>
-                        <h4 class="text-danger">Ödeme işlemi başarısız oldu</h4>
+                        <h4 class="text-danger fw-bold">Ödeme işlemi başarısız oldu</h4>
                     }
                 </div>
 
@@ -47,42 +47,46 @@
                     <strong>Durum:</strong> @Model.Message
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.OrderId))
-                {
-                    <div class="mb-3">
-                        <strong>Sipariş No:</strong> @Model.OrderId
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.OrderId))
+                        {
+                            <div class="mb-2">
+                                <strong>Sipariş No:</strong> <span class="text-muted">@Model.OrderId</span>
+                            </div>
+                        }
+
+                        @if (Model.IsSuccess)
+                        {
+                            @if (!string.IsNullOrEmpty(Model.TransactionId))
+                            {
+                                <div class="mb-2">
+                                    <strong>İşlem No:</strong> <span class="text-muted">@Model.TransactionId</span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(Model.AuthCode))
+                            {
+                                <div class="mb-2">
+                                    <strong>Onay Kodu:</strong> <span class="text-muted">@Model.AuthCode</span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            @if (!string.IsNullOrEmpty(Model.ErrorCode))
+                            {
+                                <div class="mb-2">
+                                    <strong>Hata Kodu:</strong> <span class="text-muted">@Model.ErrorCode</span>
+                                </div>
+                            }
+                        }
                     </div>
-                }
-
-                @if (Model.IsSuccess)
-                {
-                    @if (!string.IsNullOrEmpty(Model.TransactionId))
-                    {
-                        <div class="mb-3">
-                            <strong>İşlem No:</strong> @Model.TransactionId
-                        </div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(Model.AuthCode))
-                    {
-                        <div class="mb-3">
-                            <strong>Onay Kodu:</strong> @Model.AuthCode
-                        </div>
-                    }
-                }
-                else
-                {
-                    @if (!string.IsNullOrEmpty(Model.ErrorCode))
-                    {
-                        <div class="mb-3">
-                            <strong>Hata Kodu:</strong> @Model.ErrorCode
-                        </div>
-                    }
-                }
+                </div>
 
                 <div class="d-grid gap-2 mt-4">
                     <a asp-controller="Payment" asp-action="Index" class="btn btn-primary">
-                        Yeni Ödeme
+                        Yeni Ödeme İşlemi
                     </a>
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
                         Ana Sayfa

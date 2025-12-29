@@ -1,10 +1,9 @@
-using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using VakifBankVirtualPOS.WebUI.Models;
 
 namespace VakifBankVirtualPOS.WebUI.Controllers
 {
+    [Route("odeme")]
     public class PaymentController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -22,107 +21,37 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         }
 
         /// <summary>
-        /// Test ödeme sayfası
+        /// Ödeme işlemi sayfası
         /// </summary>
-        [HttpGet]
+        [HttpGet("")]
         public IActionResult Index()
         {
             return View();
         }
 
         /// <summary>
-        /// Test endpoint'ine istek atar ve sonucu gösterir
+        /// Ödeme işlemini başlatır ve 3D Secure sürecini başlatır
         /// </summary>
-        [HttpPost]
+        [HttpPost("baslat")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Initiate()
         {
             try
             {
-                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5272";
-                var httpClient = _httpClientFactory.CreateClient();
-
-                _logger.LogInformation("Test endpoint'ine istek atılıyor...");
-
-                // Test endpoint'ine POST isteği (body olmadan - endpoint hardcoded değerler kullanıyor)
-                var response = await httpClient.PostAsync($"{apiBaseUrl}/api/tests/initiate", null);
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("Test endpoint hatası. Status: {Status}, Error: {Error}",
-                        response.StatusCode, responseContent);
-
-                    TempData["Error"] = $"Hata: {response.StatusCode} - {responseContent}";
-                    TempData["Response"] = responseContent;
-                    return RedirectToAction("TestResult");
-                }
-
-                _logger.LogInformation("Test endpoint başarılı. Response: {Response}", responseContent);
-
-                // Response'u parse et
-                var enrollmentResponse = JsonSerializer.Deserialize<EnrollmentResponse>(responseContent,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (enrollmentResponse == null)
-                {
-                    TempData["Error"] = "Response parse edilemedi";
-                    TempData["Response"] = responseContent;
-                    return RedirectToAction("TestResult");
-                }
-
-                // Status ne olursa olsun 3D Secure sayfasına yönlendir
-                _logger.LogInformation("3D Secure başlatılıyor. OrderId: {OrderId}, Status: {Status}",
-                    enrollmentResponse.OrderId, enrollmentResponse.Status);
-
-                // Eğer değerler null ise message'dan parse etmeyi dene
-                var acsUrl = enrollmentResponse.ACSUrl;
-                var termUrl = enrollmentResponse.TermUrl;
-
-                if (string.IsNullOrEmpty(acsUrl) && !string.IsNullOrEmpty(enrollmentResponse.Message))
-                {
-                    // Message içinden URL'leri bul
-                    var message = enrollmentResponse.Message;
-                    var urlPattern = @"https?://[^\s]+";
-                    var urls = System.Text.RegularExpressions.Regex.Matches(message, urlPattern);
-
-                    if (urls.Count > 0)
-                    {
-                        acsUrl = urls[0].Value;
-                        _logger.LogInformation("ACS URL message'dan parse edildi: {Url}", acsUrl);
-                    }
-
-                    if (urls.Count > 1)
-                    {
-                        termUrl = urls[1].Value;
-                        _logger.LogInformation("Term URL message'dan parse edildi: {Url}", termUrl);
-                    }
-                }
-
-                TempData["ACSUrl"] = acsUrl;
-                TempData["PAReq"] = enrollmentResponse.PAReq;
-                TempData["TermUrl"] = termUrl ?? _configuration["VakifBankOptions:SuccessUrl"] ?? $"{Request.Scheme}://{Request.Host}/Payment/Callback";
-                TempData["MD"] = enrollmentResponse.MD;
-                TempData["OrderId"] = enrollmentResponse.OrderId;
-                TempData["Status"] = enrollmentResponse.Status;
-                TempData["Message"] = enrollmentResponse.Message;
-
                 return RedirectToAction("ThreeDSecure");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Test endpoint isteği hatası");
-                TempData["Error"] = $"Bir hata oluştu: {ex.Message}";
-                TempData["Response"] = ex.ToString();
-                return RedirectToAction("TestResult");
+                _logger.LogError(ex, "Ödeme başlatma hatası");
+
+                return StatusCode(500, ex);
             }
         }
 
         /// <summary>
         /// 3D Secure yönlendirme sayfası
         /// </summary>
-        [HttpGet]
+        [HttpGet("3d-dogrulama")]
         public IActionResult ThreeDSecure()
         {
             ViewBag.ACSUrl = TempData["ACSUrl"];
@@ -135,166 +64,33 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         }
 
         /// <summary>
-        /// Status mesajını döndürür
-        /// </summary>
-        private string GetStatusMessage(string status)
-        {
-            return status switch
-            {
-                "Y" => "Kart 3D Secure programına kayıtlı - Doğrulama yapılabilir",
-                "N" => "Kart 3D Secure programına kayıtlı değil",
-                "U" => "3D Secure doğrulama yapılamadı",
-                "E" => "3D Secure doğrulama hatası",
-                "A" => "Kart 3D Secure için kayıtlı ancak şifre doğrulaması yapılamadı (Half Secure)",
-                _ => $"Bilinmeyen durum: {status}"
-            };
-        }
-
-        /// <summary>
-        /// Test sonuç sayfası
-        /// </summary>
-        [HttpGet]
-        public IActionResult TestResult()
-        {
-            ViewBag.Success = TempData["Success"];
-            ViewBag.Error = TempData["Error"];
-            ViewBag.Response = TempData["Response"];
-            return View();
-        }
-
-        /// <summary>
         /// 3D Secure callback sayfası (bankadan dönen sonuçları işler)
         /// </summary>
-        [HttpPost]
+        [HttpPost("3d-bildirim")]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Callback(ThreeDCallbackViewModel model)
         {
             try
             {
-                _logger.LogInformation("3D Secure callback alındı. Status: {Status}", model.Status);
-
-                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5272";
-                var httpClient = _httpClientFactory.CreateClient();
-
-                var callbackDto = new
-                {
-                    MD = model.MD,
-                    Status = model.Status,
-                    Eci = model.Eci,
-                    Cavv = model.Cavv,
-                    VerifyEnrollmentRequestId = model.VerifyEnrollmentRequestId,
-                    MpiTransactionId = model.MpiTransactionId
-                };
-
-                var formData = new FormUrlEncodedContent(new[]
-                {
-                    new KeyValuePair<string, string>("MD", model.MD ?? ""),
-                    new KeyValuePair<string, string>("PaRes", model.PaRes ?? ""),
-                    new KeyValuePair<string, string>("Status", model.Status ?? ""),
-                    new KeyValuePair<string, string>("Eci", model.Eci ?? ""),
-                    new KeyValuePair<string, string>("Cavv", model.Cavv ?? ""),
-                    new KeyValuePair<string, string>("VerifyEnrollmentRequestId", model.VerifyEnrollmentRequestId ?? ""),
-                    new KeyValuePair<string, string>("MpiTransactionId", model.MpiTransactionId ?? "")
-                });
-
-                var response = await httpClient.PostAsync($"{apiBaseUrl}/api/payments/3d-callback", formData);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Ödeme tamamlama hatası. Status: {Status}, Error: {Error}",
-                        response.StatusCode, errorContent);
-
-                    return RedirectToAction("Result", new { isSuccess = false, message = "Ödeme tamamlanamadı." });
-                }
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var paymentResult = JsonSerializer.Deserialize<PaymentResultDto>(responseContent,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (paymentResult == null)
-                {
-                    return RedirectToAction("Result", new { isSuccess = false, message = "Ödeme sonucu alınamadı." });
-                }
-
-                return RedirectToAction("Result", new
-                {
-                    isSuccess = paymentResult.IsSuccess,
-                    message = paymentResult.Message,
-                    transactionId = paymentResult.TransactionId,
-                    authCode = paymentResult.AuthCode,
-                    orderId = paymentResult.OrderId,
-                    errorCode = paymentResult.ErrorCode
-                });
+                return RedirectToAction("Success");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Callback işleme hatası");
-                return RedirectToAction("Result", new { isSuccess = false, message = "Bir hata oluştu." });
+                return StatusCode(500, ex);
             }
         }
 
-        /// <summary>
-        /// Ödeme sonuç sayfası
-        /// </summary>
-        [HttpGet]
-        public IActionResult Result(bool isSuccess, string message, string? transactionId = null,
-            string? authCode = null, string? orderId = null, string? errorCode = null)
+        [HttpGet("basarili/{orderId}")]
+        public IActionResult Success(string orderId, CancellationToken cancellationToken)
         {
-            var viewModel = new PaymentResultViewModel
-            {
-                IsSuccess = isSuccess,
-                Message = message ?? "Bilinmeyen hata",
-                TransactionId = transactionId,
-                AuthCode = authCode,
-                OrderId = orderId,
-                ErrorCode = errorCode
-            };
-
-            return View(viewModel);
+            return View();
         }
 
-        /// <summary>
-        /// MM/YY formatını YYMM formatına çevirir
-        /// </summary>
-        private string ConvertExpiryDateToYYMM(string expiryDate)
+        [HttpGet("basarisiz/{orderId?}")]
+        public IActionResult Failed(string? orderId, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(expiryDate))
-                return string.Empty;
-
-            // MM/YY formatından MM ve YY'yi al
-            var parts = expiryDate.Split('/');
-            if (parts.Length != 2)
-                return expiryDate;
-
-            var month = parts[0].PadLeft(2, '0');
-            var year = parts[1].PadLeft(2, '0');
-
-            // YYMM formatına çevir
-            return $"{year}{month}";
-        }
-
-        // DTO classes for deserialization
-        private class EnrollmentResponse
-        {
-            public string OrderId { get; set; } = string.Empty;
-            public string Status { get; set; } = string.Empty;
-            public string Message { get; set; } = string.Empty;
-            public string MessageErrorCode { get; set; } = string.Empty;
-            public string ACSUrl { get; set; } = string.Empty;
-            public string PAReq { get; set; } = string.Empty;
-            public string TermUrl { get; set; } = string.Empty;
-            public string MD { get; set; } = string.Empty;
-        }
-
-        private class PaymentResultDto
-        {
-            public bool IsSuccess { get; set; }
-            public string Message { get; set; } = string.Empty;
-            public string? TransactionId { get; set; }
-            public string? AuthCode { get; set; }
-            public string? OrderId { get; set; }
-            public string? ErrorCode { get; set; }
+            return View();
         }
     }
 }

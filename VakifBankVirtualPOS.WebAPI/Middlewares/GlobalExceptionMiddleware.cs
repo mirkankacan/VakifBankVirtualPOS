@@ -35,7 +35,7 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
         {
             var request = context.Request;
 
-            var userId = _httpContextAccessor.HttpContext?.Session.GetString("ClientCode"); ;
+            var userId = _httpContextAccessor.HttpContext?.Session.GetString("ClientCode") ?? null;
             var clientIp = IpHelper.GetClientIp(_httpContextAccessor);
             var userAgent = request.Headers["User-Agent"].ToString();
             var requestId = context.TraceIdentifier;

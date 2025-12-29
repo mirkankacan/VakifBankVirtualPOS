@@ -1,26 +1,26 @@
 @{
-    ViewData["Title"] = "Test Ödeme";
+    ViewData["Title"] = "Ödeme Yap";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h3 class="card-title mb-0">
-                    Test Ödeme İşlemi
-                </h3>
-            </div>
-            <div class="card-body text-center">
-                <p class="lead mb-4">
-                    Hardcoded değerlerle test endpoint'ine istek atılacak.
-                </p>
-                
-                <form asp-action="Initiate" method="post">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                        <span id="submitText">Test İsteği Gönder</span>
-                        <span id="submitSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
-                    </button>
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center"><img src="https://testegesehirv2.izmirteknoloji.com.tr/images/KurumsalKimlik/d77ce8a0-44da-43b7-99a4-cfc75e6cfee2.png" /></h5>
+                <form class="row g-3 needs-validation" novalidate id="searchForm">
+                    <div class="col-md-12">
+                        <label for="txtTaxNumber" class="form-label">Vergi Numarası / TC Kimlik Numarası</label>
+                        <input type="text" class="form-control" id="txtTaxNumber" value="" required>
+                        <div id="taxHelp" class="form-text">10 hane: Vergi numarası, 11 hane: TC kimlik numarası ile arama yapar. Numarayı girip 'Cari Ara' butonuna tıklayın.</div>
+                        <div class="valid-feedback">
+                        </div>
+                        <div class="invalid-feedback">
+                            Lütfen geçerli bir vergi numarası ya da TC kimlik numarası giriniz.
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-egesehir w-100" type="submit"><i class="fa-solid fa-magnifying-glass mx-2"></i>Cari Ara</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -29,18 +29,111 @@
 
 @section Scripts {
     <script>
-        // Form submit animasyonu
-        document.querySelector('form')?.addEventListener('submit', function () {
-            const submitBtn = document.getElementById('submitBtn');
-            const submitText = document.getElementById('submitText');
-            const submitSpinner = document.getElementById('submitSpinner');
-            
-            if (submitBtn && submitText && submitSpinner) {
-                submitBtn.disabled = true;
-                submitText.textContent = 'İşleniyor...';
-                submitSpinner.classList.remove('d-none');
-            }
+        $(document).ready(async function () {
+            // URL parametrelerini işle
+            await processHybsParameters();
+
+            // Form submit işlemi
+            $('#searchForm').on('submit', async function (e) {
+                e.preventDefault();
+                await handleFormSubmit();
+            });
         });
+
+        // URL parametrelerini işleyen async function
+        async function processHybsParameters() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const pParam = urlParams.get('p');
+
+                if (pParam) {
+                    // Base64 değerini decode et
+                    const decodedJson = atob(pParam);
+                    const jsonData = JSON.parse(decodedJson);
+
+                    // JSON'dan VergiNo, BelgeNo, Tutar değerlerini al
+                    if (jsonData.VergiNo) {
+                        $('#txtTaxNumber').val(jsonData.VergiNo);
+                        
+                        // /cari/no/{jsonData.VergiNo} adresine GET isteği
+                        try {
+                            const apiUrl = `/cari/no/${jsonData.VergiNo}`;
+                            const data = await fetchClientData(apiUrl);
+                        } catch (error) {
+                            console.error('Cari bilgileri getirilirken hata:', error);
+                            toastr.error('Cari bilgileri getirilirken bir hata oluştu.');
+                        }
+                    }
+
+                    // BelgeNo ve Tutar değerlerini sakla (ileride kullanılabilir)
+                    if (jsonData.BelgeNo) {
+                        $('#txtTaxNumber').data('belgeNo', jsonData.BelgeNo);
+                    }
+                    if (jsonData.Tutar) {
+                        $('#txtTaxNumber').data('tutar', jsonData.Tutar);
+                    }
+                }
+            } catch (error) {
+                console.error('Base64 decode veya JSON parse hatası:', error);
+                toastr.error('URL parametresi işlenirken bir hata oluştu.');
+            }
+        }
+
+        // Form submit işlemini yöneten async function
+        async function handleFormSubmit() {
+            try {
+                const taxNumber = $('#txtTaxNumber').val().trim();
+
+                if (!taxNumber) {
+                    toastr.error('Lütfen vergi numarası veya TC kimlik numarası giriniz.');
+                    return;
+                }
+
+                // Sadece rakam kontrolü
+                if (!/^\d+$/.test(taxNumber)) {
+                    toastr.error('Vergi numarası veya TC kimlik numarası sadece rakam içermelidir.');
+                    return;
+                }
+
+                let apiUrl = '';
+
+                // 10 hane ise vergi numarası, 11 hane ise TC kimlik numarası
+                if (taxNumber.length === 10) {
+                    apiUrl = `/cari/vergi-no/${taxNumber}`;
+                } else if (taxNumber.length === 11) {
+                    apiUrl = `/cari/tc-no/${taxNumber}`;
+                } else {
+                    toastr.error('Vergi numarası 10 hane, TC kimlik numarası 11 hane olmalıdır.');
+                    return;
+                }
+
+                // Fetch API ile GET isteği
+                const data = await fetchClientData(apiUrl);
+
+                toastr.success('Cari bilgileri başarıyla getirildi.');
+                console.log('Cari bilgileri:', data);
+                // Burada gelen veriyi işleyebilirsiniz
+            } catch (error) {
+                console.error('Hata:', error);
+                toastr.error(error.message || 'Cari bilgileri getirilirken bir hata oluştu.');
+            }
+        }
+
+        // API'den cari bilgilerini getiren async function
+        async function fetchClientData(apiUrl) {
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'İstek başarısız oldu');
+            }
+
+            return await response.json();
+        }
     </script>
 }
-

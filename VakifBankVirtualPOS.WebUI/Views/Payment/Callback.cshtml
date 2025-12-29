@@ -13,16 +13,28 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #9c182f 0%, #7d1225 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .loading-container {
             text-align: center;
             color: white;
+            padding: 2rem;
+        }
+        
+        .loading-container h3 {
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+        
+        .loading-container p {
+            margin-top: 0.5rem;
+            opacity: 0.9;
         }
 
         .spinner {
@@ -39,6 +51,22 @@
             to {
                 transform: rotate(360deg);
             }
+        }
+        
+        .alert {
+            background-color: white;
+            color: #9c182f;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-primary {
+            background-color: #9c182f;
+            border-color: #9c182f;
+        }
+        
+        .btn-primary:hover {
+            background-color: #7d1225;
+            border-color: #7d1225;
         }
     </style>
 </head>

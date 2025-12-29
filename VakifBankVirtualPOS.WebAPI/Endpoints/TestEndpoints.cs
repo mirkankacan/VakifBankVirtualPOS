@@ -24,11 +24,11 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 var request = new PaymentInitiateRequestDto();
                 request.DocumentNo = null;
                 request.ClientCode = "123456";
-                request.ExpiryDate = "11/24";
+                request.ExpiryDate = "04/28";
                 request.Amount = 1000;
-                request.CardNumber = "6501700161161969";
+                request.CardNumber = "5421190122090656";
                 request.CardHolderName = "Mirkan Kaçan";
-                request.Cvv = "390";
+                request.Cvv = "916";
                 var result = await paymentService.InitiateThreeDSecureAsync(request, cancellationToken);
                 return result.ToGenericResult();
             })
