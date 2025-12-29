@@ -30,7 +30,6 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var emailOptions = configuration.GetSection("EmailOptions").Get<EmailOptions>()!;
             services.AddScoped<GlobalExceptionMiddleware>();
-
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
 

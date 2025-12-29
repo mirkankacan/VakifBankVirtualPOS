@@ -11,9 +11,24 @@
 *.sln.docstates
 
 /.vscode
-appsettings.json
+
+# Şifrelenmiş dosyalar
+*.enc
+
+# Production ayarları (şifrelenmemiş)
+appsettings.Production.json
+appsettings.Development.json
 appsettings.*.json
+!appsettings.json
+
+# Secrets klasörü
+Secrets/
+C:/Secrets/
+
+# Tool'lar (opsiyonel - eğer paylaşmak istemiyorsanız)
+Tools/EncryptConfiguration.cs
 IdeKusgozManagement.WebAPI/wwwroot/Uploads/
+
 **/Uploads/
 *.log
 *.tmp
