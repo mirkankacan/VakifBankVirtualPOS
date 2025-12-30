@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Net;
+using Microsoft.AspNetCore.Mvc;
+using VakifBankVirtualPOS.WebUI.Extensions;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
 namespace VakifBankVirtualPOS.WebUI.Controllers
@@ -17,31 +19,48 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         public async Task<IActionResult> GetByTaxNumber(string taxNumber, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(taxNumber))
-                return BadRequest("Vergi numarası boş gönderilemez");
+            {
+                return Problem(
+                    title: "Doğrulama Hatası",
+                    detail: "Vergi numarası boş gönderilemez",
+                    statusCode: (int)HttpStatusCode.BadRequest
+                );
+            }
 
             var client = await _clientApiService.GetByTaxNumberAsync(taxNumber, cancellationToken);
-
-            return client.IsSuccess ? Ok(client.Data) : BadRequest(client.ErrorMessage);
+            return client.ToActionResult();
         }
 
         [HttpGet("tc-no/{tcNumber}")]
         public async Task<IActionResult> GetByTcNumber(string tcNumber, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(tcNumber))
-                return BadRequest("TC Kimlik numarası boş gönderilemez");
+            {
+                return Problem(
+                    title: "Doğrulama Hatası",
+                    detail: "TC Kimlik numarası boş gönderilemez",
+                    statusCode: (int)HttpStatusCode.BadRequest
+                );
+            }
 
             var client = await _clientApiService.GetByTcNumberAsync(tcNumber, cancellationToken);
-            return client.IsSuccess ? Ok(client.Data) : BadRequest(client.ErrorMessage);
+            return client.ToActionResult();
         }
 
         [HttpGet("no/{no}")]
         public async Task<IActionResult> CheckByNo(string no, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(no))
-                return BadRequest("HYBS'den gelen vergi numarası ya da TC kimlik numarası boş");
+            {
+                return Problem(
+                    title: "Doğrulama Hatası",
+                    detail: "HYBS'den gelen vergi numarası ya da TC kimlik numarası boş",
+                    statusCode: (int)HttpStatusCode.BadRequest
+                );
+            }
 
             var client = await _clientApiService.CheckByNoAsync(no, cancellationToken);
-            return client.IsSuccess ? Ok(client.Data) : BadRequest(client.ErrorMessage);
+            return client.ToActionResult();
         }
     }
 }

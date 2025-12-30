@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using VakifBankVirtualPOS.WebUI.Extensions;
 using VakifBankVirtualPOS.WebUI.Models.PaymentViewModels;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
@@ -31,7 +32,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         /// Ödeme işlemini başlatır ve 3D Secure sürecini başlatır
         /// </summary>
         [HttpPost("baslat")]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Initiate([FromBody] PaymentInitiateViewModel model)
         {
             try
@@ -40,7 +40,7 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
 
                 if (!result.IsSuccess)
                 {
-                    return BadRequest(result.ErrorMessage);
+                    return result.ToActionResult();
                 }
 
                 HttpContext.Session.SetString("ACSUrl", result.Data.ACSUrl);

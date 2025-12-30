@@ -167,10 +167,45 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 return ApiResponse<T>.Success(data, statusCode);
             }
 
+            // Hata durumunda ProblemDetails parse et
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogWarning("API hatası: {StatusCode} - {Error}", statusCode, errorContent);
+            string errorTitle = null;
+            string errorDetail = null;
 
-            return ApiResponse<T>.Failure(errorContent, statusCode);
+            try
+            {
+                var problemDetails = JsonSerializer.Deserialize<ProblemDetailsResponse>(errorContent, _jsonOptions);
+
+                if (problemDetails != null)
+                {
+                    errorTitle = problemDetails.Title;
+                    errorDetail = problemDetails.Detail;
+                }
+
+                // Eğer title veya detail yoksa, ham içeriği kullan
+                if (string.IsNullOrEmpty(errorTitle) && string.IsNullOrEmpty(errorDetail))
+                {
+                    errorDetail = !string.IsNullOrEmpty(errorContent)
+                        ? errorContent
+                        : $"Bir hata oluştu. (HTTP {(int)statusCode})";
+                }
+            }
+            catch
+            {
+                // JSON parse edilemezse ham içeriği detail olarak kullan
+                errorDetail = !string.IsNullOrEmpty(errorContent)
+                    ? errorContent
+                    : $"Bir hata oluştu. (HTTP {(int)statusCode})";
+            }
+
+            _logger.LogWarning("API hatası: {StatusCode} - Title: {Title}, Detail: {Detail}", statusCode, errorTitle, errorDetail);
+            
+            if (!string.IsNullOrEmpty(errorTitle) || !string.IsNullOrEmpty(errorDetail))
+            {
+                return ApiResponse<T>.Failure(errorTitle ?? "Hata", errorDetail ?? $"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
+            }
+            
+            return ApiResponse<T>.Failure($"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
         }
 
         private async Task<ApiResponse> HandleResponse(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -182,10 +217,45 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 return ApiResponse.Success(statusCode);
             }
 
+            // Hata durumunda ProblemDetails parse et
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogWarning("API hatası: {StatusCode} - {Error}", statusCode, errorContent);
+            string errorTitle = null;
+            string errorDetail = null;
 
-            return ApiResponse.Failure(errorContent, statusCode);
+            try
+            {
+                var problemDetails = JsonSerializer.Deserialize<ProblemDetailsResponse>(errorContent, _jsonOptions);
+
+                if (problemDetails != null)
+                {
+                    errorTitle = problemDetails.Title;
+                    errorDetail = problemDetails.Detail;
+                }
+
+                // Eğer title veya detail yoksa, ham içeriği kullan
+                if (string.IsNullOrEmpty(errorTitle) && string.IsNullOrEmpty(errorDetail))
+                {
+                    errorDetail = !string.IsNullOrEmpty(errorContent)
+                        ? errorContent
+                        : $"Bir hata oluştu. (HTTP {(int)statusCode})";
+                }
+            }
+            catch
+            {
+                // JSON parse edilemezse ham içeriği detail olarak kullan
+                errorDetail = !string.IsNullOrEmpty(errorContent)
+                    ? errorContent
+                    : $"Bir hata oluştu. (HTTP {(int)statusCode})";
+            }
+
+            _logger.LogWarning("API hatası: {StatusCode} - Title: {Title}, Detail: {Detail}", statusCode, errorTitle, errorDetail);
+            
+            if (!string.IsNullOrEmpty(errorTitle) || !string.IsNullOrEmpty(errorDetail))
+            {
+                return ApiResponse.Failure(errorTitle ?? "Hata", errorDetail ?? $"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
+            }
+            
+            return ApiResponse.Failure($"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
         }
     }
 }

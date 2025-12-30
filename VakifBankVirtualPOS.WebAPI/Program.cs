@@ -21,7 +21,6 @@ if (builder.Environment.IsProduction())
 
     try
     {
-
         if (File.Exists(encryptedConfigPath))
         {
             builder.Configuration.AddEncryptedJsonFile(encryptedConfigPath);

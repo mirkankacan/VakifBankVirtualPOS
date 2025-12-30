@@ -66,8 +66,8 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 if (client == null)
                 {
                     return ServiceResult<ClientDto>.Error(
-                        "Cari Bulunamadı",
                         "Cari bulunamadı",
+                        $"{clientCode} kodlu cari bulunamadı",
                         HttpStatusCode.NotFound);
                 }
 
@@ -90,7 +90,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 {
                     return ServiceResult<ClientDto>.Error(
                         "Cari Bulunamadı",
-                        "Cari bulunamadı",
+                        $"{taxNumber} vergi numaralı cari bulunamadı",
                         HttpStatusCode.NotFound);
                 }
 
@@ -113,7 +113,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 {
                     return ServiceResult<ClientDto>.Error(
                         "Cari Bulunamadı",
-                        "Cari bulunamadı",
+                        $"{tcNumber} TC kimlik numaralı cari bulunamadı",
                         HttpStatusCode.NotFound);
                 }
 

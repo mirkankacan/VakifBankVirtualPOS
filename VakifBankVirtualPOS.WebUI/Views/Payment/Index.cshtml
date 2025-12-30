@@ -159,7 +159,7 @@
                             clientData = data;
                             showPaymentForm(data, jsonData);
                         } catch (error) {
-                            toastr.error('Cari bilgileri getirilirken bir hata oluştu.');
+                            toastr.error(error, 'Cari bilgileri getirilirken bir hata oluştu.');
                         }
                     }
                 }
@@ -208,7 +208,7 @@
                 toastr.success('Cari bilgileri başarıyla getirildi.');
                 showPaymentForm(data);
             } catch (error) {
-                toastr.error(error.message || 'Cari bilgileri getirilirken bir hata oluştu.');
+                toastr.error(error, 'Cari bilgileri getirilirken bir hata oluştu.');
             }
         }
 
@@ -326,13 +326,6 @@
                     amount = parseFloat(hybsAmount);
                 }
 
-                // CSRF token'ı al
-                const csrfToken = $('input[name="__RequestVerificationToken"]').val();
-                if (!csrfToken) {
-                    toastr.error('Güvenlik token\'ı bulunamadı. Sayfayı yenileyiniz.');
-                    return;
-                }
-
                 // Request body oluştur
                 const requestBody = {
                     cardNumber: cardNumber,
@@ -349,21 +342,7 @@
                 submitButton.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Ödeme Başlatılıyor...');
 
                 // POST isteği
-                const response = await fetch('/odeme/baslat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Ödeme başlatılırken bir hata oluştu.');
-                }
-
-                const result = await response.json();
+                const result = await makeRequest('/odeme/baslat', 'POST', requestBody);
 
                 // 3D Secure sayfasına yönlendir
                 if (result && result.redirectUrl) {
@@ -377,25 +356,13 @@
                 submitButton.prop('disabled', false);
                 submitButton.html(originalButtonContent);
 
-                toastr.error(error.message || 'Ödeme işlemi sırasında bir hata oluştu.');
+                toastr.error(error, 'Ödeme işlemi sırasında bir hata oluştu.');
             }
         }
 
         // API'den cari bilgilerini getiren async function
         async function fetchClientData(apiUrl) {
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'İstek başarısız oldu');
-            }
-
-            return await response.json();
+            return await makeRequest(apiUrl, 'GET');
         }
     </script>
 }
