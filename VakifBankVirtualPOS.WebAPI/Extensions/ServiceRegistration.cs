@@ -2,7 +2,7 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
@@ -44,6 +44,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebAPISession";
+                options.Cookie.MaxAge = TimeSpan.FromMinutes(5);
             });
             services.AddRateLimiter(options =>
             {
@@ -180,30 +181,29 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     Description = "VakıfBank Sanal POS Web API"
                 });
 
-                //options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                //{
-                //    Name = "Authorization",
-                //    Type = SecuritySchemeType.Http,
-                //    Scheme = "Bearer",
-                //    BearerFormat = "JWT",
-                //    In = ParameterLocation.Header,
-                //    Description = "JWT token giriniz. Sadece token yazın, 'Bearer' eklemeyin.\n\nÖrnek: eyJhbGciOiJIUzI1NiIs..."
-                //});
+                // API Key güvenliği ekle
+                options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                {
+                    Name = "X-API-Key",
+                    Type = SecuritySchemeType.ApiKey,
+                    In = ParameterLocation.Header,
+                    Description = "API Key'inizi buraya girin. Örnek: your-api-key-here"
+                });
 
-                //options.AddSecurityRequirement(new OpenApiSecurityRequirement
-                //{
-                //    {
-                //        new OpenApiSecurityScheme
-                //        {
-                //            Reference = new OpenApiReference
-                //            {
-                //                Type = ReferenceType.SecurityScheme,
-                //                Id = "Bearer"
-                //            }
-                //        },
-                //        Array.Empty<string>()
-                //    }
-                //});
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
             });
             services.AddMapster();
             var config = TypeAdapterConfig.GlobalSettings;

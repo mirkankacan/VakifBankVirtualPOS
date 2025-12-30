@@ -12,11 +12,39 @@ namespace VakifBankVirtualPOS.WebAPI.Data.Context
         public DbSet<IDT_CARI_HAREKET> IDT_CARI_HAREKET => Set<IDT_CARI_HAREKET>();
         public DbSet<IDT_VAKIFBANK_ODEME> IDT_VAKIFBANK_ODEME => Set<IDT_VAKIFBANK_ODEME>();
         public DbSet<IDT_CARI_KAYIT> IDT_CARI_KAYIT => Set<IDT_CARI_KAYIT>();
+        public DbSet<IDT_API_KEY> IDT_API_KEY => Set<IDT_API_KEY>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<IDT_API_KEY>(entity =>
+            {
+                entity.ToTable("IDT_API_KEY");
+                entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.ApiKey)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                entity.Property(e => e.Description)
+                  .IsRequired()
+                  .HasMaxLength(350);
+                entity.Property(e => e.IsActive)
+                .IsRequired(true)
+                .HasDefaultValue(true);
+
+                entity.Property(e => e.CreatedAt)
+                .IsRequired(true)
+                .HasDefaultValueSql("GETDATE()");
+
+                entity.Property(e => e.ExpiresAt)
+           .IsRequired(false);
+
+                entity.Property(e => e.LastUsedAt)
+           .IsRequired(false);
+
+                entity.HasIndex(e => e.ApiKey)
+                    .IsUnique();
+            });
             modelBuilder.Entity<IDT_CARI_KAYIT>(entity =>
             {
                 entity.ToTable("IDT_CARI_KAYIT");

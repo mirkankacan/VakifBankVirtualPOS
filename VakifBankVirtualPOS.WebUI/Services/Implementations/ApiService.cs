@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using VakifBankVirtualPOS.WebUI.Common;
+using VakifBankVirtualPOS.WebUI.Options;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
 namespace VakifBankVirtualPOS.WebUI.Services.Implementations
@@ -11,6 +12,7 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<ApiService> _logger;
+        private readonly ApiOptions _apiOptions;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -20,10 +22,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
-        public ApiService(HttpClient httpClient, ILogger<ApiService> logger)
+        public ApiService(HttpClient httpClient, ILogger<ApiService> logger, ApiOptions apiOptions)
         {
             _httpClient = httpClient;
             _logger = logger;
+            _apiOptions = apiOptions;
+
+            // API Key'i her istekte otomatik olarak ekle
+            _httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiOptions.ApiKey);
         }
 
         public async Task<ApiResponse<T>> GetAsync<T>(string endpoint, CancellationToken cancellationToken = default)
@@ -199,12 +205,12 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             }
 
             _logger.LogWarning("API hatası: {StatusCode} - Title: {Title}, Detail: {Detail}", statusCode, errorTitle, errorDetail);
-            
+
             if (!string.IsNullOrEmpty(errorTitle) || !string.IsNullOrEmpty(errorDetail))
             {
                 return ApiResponse<T>.Failure(errorTitle ?? "Hata", errorDetail ?? $"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
             }
-            
+
             return ApiResponse<T>.Failure($"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
         }
 
@@ -249,12 +255,12 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             }
 
             _logger.LogWarning("API hatası: {StatusCode} - Title: {Title}, Detail: {Detail}", statusCode, errorTitle, errorDetail);
-            
+
             if (!string.IsNullOrEmpty(errorTitle) || !string.IsNullOrEmpty(errorDetail))
             {
                 return ApiResponse.Failure(errorTitle ?? "Hata", errorDetail ?? $"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
             }
-            
+
             return ApiResponse.Failure($"Bir hata oluştu. (HTTP {(int)statusCode})", statusCode);
         }
     }

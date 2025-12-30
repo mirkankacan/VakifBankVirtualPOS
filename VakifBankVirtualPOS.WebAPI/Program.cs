@@ -42,12 +42,8 @@ if (builder.Environment.IsProduction())
 builder.Services.AddOptionsExtensions();
 builder.Services.AddWebApiServices(builder.Configuration, builder.Host);
 var app = builder.Build();
+
 app.UseHttpsRedirection();
-
-app.UseSession();
-app.UseRateLimiter();
-app.UseMiddleware<GlobalExceptionMiddleware>();
-
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
@@ -55,5 +51,17 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
+app.UseSession();
+app.UseMiddleware<ApiKeyMiddleware>();
+app.UseRateLimiter();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy",
+    timestamp = DateTime.UtcNow
+}))
+.ExcludeFromDescription();
 app.MapCarter();
 app.Run();

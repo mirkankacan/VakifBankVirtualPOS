@@ -66,18 +66,27 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         [HttpGet("3d-dogrulama")]
         public IActionResult ThreeDSecure()
         {
-            ViewBag.ACSUrl = HttpContext.Session.GetString("ACSUrl");
-            ViewBag.PAReq = HttpContext.Session.GetString("PAReq");
-            ViewBag.TermUrl = HttpContext.Session.GetString("TermUrl");
-            ViewBag.MD = HttpContext.Session.GetString("MD");
-            ViewBag.OrderId = HttpContext.Session.GetString("OrderId");
-            ClearPaymentSession();
+            var acsUrl = HttpContext.Session.GetString("ACSUrl");
+            var paReq = HttpContext.Session.GetString("PAReq");
+            var termUrl = HttpContext.Session.GetString("TermUrl");
+            var md = HttpContext.Session.GetString("MD");
+            var orderId = HttpContext.Session.GetString("OrderId");
 
-            if (string.IsNullOrEmpty(ViewBag.ACSUrl))
+            // Session kontrolü
+            if (string.IsNullOrEmpty(acsUrl) || string.IsNullOrEmpty(paReq))
             {
+                _logger.LogWarning("3D Secure verisi bulunamadı");
                 return RedirectToAction(nameof(Failed));
             }
 
+            // ViewBag'e ata
+            ViewBag.ACSUrl = acsUrl;
+            ViewBag.PAReq = paReq;
+            ViewBag.TermUrl = termUrl;
+            ViewBag.MD = md;
+            ViewBag.OrderId = orderId;
+
+            ClearPaymentSession();
             return View();
         }
 
@@ -94,7 +103,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
                 return View(payment.Data);
             }
             return View();
-
         }
 
         [HttpGet("basarisiz/{orderId?}")]
@@ -105,7 +113,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
                 var payment = await _paymentApiService.GetPaymentByOrderIdAsync(orderId, cancellationToken);
                 if (payment.IsSuccess)
                 {
-
                     if (payment.Data.ResultCode == "0000")
                     {
                         return Redirect($"/odeme/basarili/{orderId}");
@@ -115,7 +122,6 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
             }
             return View();
         }
-
 
         private void ClearPaymentSession()
         {
