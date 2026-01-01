@@ -8,9 +8,9 @@ namespace VakifBankVirtualPOS.WebAPI.Options
         public string BaseUrl { get; set; } = default!;
 
         [Required]
-        public string SuccessUrl { get; set; } = default!;
+        public string PaymentSuccessUrl { get; set; } = default!;
 
         [Required]
-        public string FailureUrl { get; set; } = default!;
+        public string PaymentFailureUrl { get; set; } = default!;
     }
 }

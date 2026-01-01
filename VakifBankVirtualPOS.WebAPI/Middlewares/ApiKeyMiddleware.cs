@@ -8,6 +8,15 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
         private readonly RequestDelegate _next;
         private const string API_KEY_HEADER = "X-API-Key";
 
+        private static readonly string[] BypassPaths =
+   {
+        "/health",
+        "/health-ui",
+        "/health-ui-api",
+        "/health-ui-resources",
+        "/health-ui-webhook"
+    };
+
         public ApiKeyMiddleware(RequestDelegate next)
         {
             _next = next;
@@ -15,11 +24,12 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
         {
-            if (context.Request.Path.StartsWithSegments("/health") || context.Request.Path.StartsWithSegments("/health-ui"))
+            if (BypassPaths.Any(path => context.Request.Path.StartsWithSegments(path)))
             {
                 await _next(context);
                 return;
             }
+
             // API Key kontrolü
             if (!context.Request.Headers.TryGetValue(API_KEY_HEADER, out var extractedApiKey))
             {

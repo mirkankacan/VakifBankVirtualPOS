@@ -52,8 +52,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
                     var orderId = result.Data?.OrderId ?? callback.SessionInfo;
 
                     // Success durumunda orderId zorunludur
-                    var redirectUrl = result.IsSuccess ? $"{options.SuccessUrl}/{orderId}" : !string.IsNullOrEmpty(orderId) ? $"{options.FailureUrl}/{orderId}" : options.FailureUrl;
-
+                    var redirectUrl = result.IsSuccess ? $"{options.PaymentSuccessUrl}/{orderId}" : !string.IsNullOrEmpty(orderId) ? $"{options.PaymentFailureUrl}/{orderId}" : options.PaymentFailureUrl;
 
                     var logoUrl = $"{options.BaseUrl}/theme/assets/images/egesehir.png";
                     var isSuccess = result.IsSuccess;
@@ -146,7 +145,7 @@ namespace VakifBankPayment.WebAPI.Endpoints
                 }
                 catch (Exception)
                 {
-                    var errorUrl = $"{options.FailureUrl}";
+                    var errorUrl = $"{options.PaymentFailureUrl}";
                     var logoUrl = $"{options.BaseUrl}/theme/assets/images/egesehir.png";
 
                     var errorHtml = $@"

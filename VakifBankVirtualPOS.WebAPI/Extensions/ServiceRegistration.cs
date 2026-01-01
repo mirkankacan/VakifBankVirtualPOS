@@ -31,13 +31,17 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             var connectionString = configuration.GetConnectionString("SqlConnection");
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var emailOptions = configuration.GetSection("EmailOptions").Get<EmailOptions>()!;
+            var uiOptions = configuration.GetSection("UiOptions").Get<UiOptions>()!;
+
             services.AddScoped<GlobalExceptionMiddleware>();
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
             services.AddHttpClient();
             services.AddHttpContextAccessor();
             services.AddDistributedMemoryCache();
+
             services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(5);
@@ -48,6 +52,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebAPISession";
                 options.Cookie.MaxAge = TimeSpan.FromMinutes(5);
             });
+
             services.AddRateLimiter(options =>
             {
                 // Global rate limit - IP bazlı
@@ -60,8 +65,8 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                         partitionKey: clientIp,
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit = 100, // 100 istek
-                            Window = TimeSpan.FromMinutes(1), // 1 dakikada
+                            PermitLimit = 100,
+                            Window = TimeSpan.FromMinutes(1),
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                             QueueLimit = 0
                         });
@@ -76,8 +81,8 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                         partitionKey: clientIp,
                         factory: _ => new SlidingWindowRateLimiterOptions
                         {
-                            PermitLimit = 5, // 5 ödeme isteği
-                            Window = TimeSpan.FromMinutes(1), // 1 dakikada
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
                             SegmentsPerWindow = 2,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                             QueueLimit = 0
@@ -115,6 +120,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     }, cancellationToken);
                 };
             });
+
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -183,7 +189,6 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     Description = "VakıfBank Sanal POS Web API"
                 });
 
-                // API Key güvenliği ekle
                 options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
                     Name = "X-API-Key",
@@ -193,116 +198,92 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
                 {
-                    new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "ApiKey"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
-            });
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "ApiKey"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
             });
 
-            // Health Checks
+            //  Health Checks
             services.AddHealthChecks()
-                // 🗄️ Database Checks
+                //  SQL Server Bağlantısı
                 .AddSqlServer(
                     connectionString: connectionString!,
                     healthQuery: "SELECT 1;",
-                    name: "sql-server-connection",
+                    name: "sql-server",
                     failureStatus: HealthStatus.Unhealthy,
-                    tags: new[] { "db", "sql", "sqlserver", "ready" })
+                    tags: new[] { "database" })
 
+                // 🗄 Database İşlemleri
                 .AddCheck<DatabaseHealthCheck>(
                     "database-operations",
                     failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "db", "custom", "ready" })
+                    tags: new[] { "database" })
 
-                // 💾 Memory Checks
-                .AddProcessAllocatedMemoryHealthCheck(
-                    maximumMegabytesAllocated: 1024,
-                    name: "process-allocated-memory",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "memory", "performance" })
-
-                .AddPrivateMemoryHealthCheck(
-                    maximumMemoryBytes: 1024 * 1024 * 1024,
-                    name: "private-memory",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "memory", "performance" })
-
-                .AddWorkingSetHealthCheck(
-                    maximumMemoryBytes: 1024 * 1024 * 1024,
-                    name: "working-set-memory",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "memory", "performance" })
-
-                .AddVirtualMemorySizeHealthCheck(
-                    maximumMemoryBytes: 2L * 1024 * 1024 * 1024,
-                    name: "virtual-memory",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "memory", "performance" })
-
-                // 💿 Disk Storage
-                .AddDiskStorageHealthCheck(
-                    setup: options =>
-                    {
-                        options.AddDrive(driveName: "C:\\", minimumFreeMegabytes: 5000);
-                    },
-                    name: "disk-storage-c",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "disk", "storage" })
-
-                // 🌐 Network Connectivity
-                .AddPingHealthCheck(
-                    setup: options =>
-                    {
-                        options.AddHost("www.google.com", 5000);
-                    },
-                    name: "internet-connectivity",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "network", "ping" })
-
-                // 🏦 VakıfBank APIs
+                //  VakıfBank Enrollment API
                 .AddUrlGroup(
                     uri: new Uri(configuration["VakifBankOptions:EnrollmentUrl"]!),
-                    name: "vakifbank-enrollment-api",
+                    name: "vakifbank-enrollment",
                     failureStatus: HealthStatus.Degraded,
                     timeout: TimeSpan.FromSeconds(10),
-                    tags: new[] { "vakifbank", "api", "external", "ready" })
+                    tags: new[] { "external" })
 
+                //  VakıfBank VPOS API
                 .AddUrlGroup(
                     uri: new Uri(configuration["VakifBankOptions:VposUrl"]!),
-                    name: "vakifbank-vpos-api",
+                    name: "vakifbank-vpos",
                     failureStatus: HealthStatus.Degraded,
                     timeout: TimeSpan.FromSeconds(10),
-                    tags: new[] { "vakifbank", "api", "external", "ready" })
+                    tags: new[] { "external" })
 
-                // 🔌 Custom External Services
+                //  HYBS API
                 .AddCheck<HybsApiHealthCheck>(
                     "hybs-api",
                     failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "external", "api", "hybs", "ready" })
+                    tags: new[] { "external" })
 
+                //  Email SMTP
                 .AddCheck<EmailServiceHealthCheck>(
-                    "email-smtp-service",
+                    "email-smtp",
                     failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "email", "smtp", "external", "ready" });
+                    tags: new[] { "external" });
 
-            // Health Checks UI
+            //  Health Checks UI
             services
-             .AddHealthChecksUI(setup =>
-             {
-                 setup.SetEvaluationTimeInSeconds(30);
-                 setup.MaximumHistoryEntriesPerEndpoint(100);
-                 setup.AddHealthCheckEndpoint("Egeşehir VakıfBank Virtual POS API", "/health");
-             })
-             .AddSqlServerStorage(connectionString!);
+                .AddHealthChecksUI(setup =>
+                {
+                    setup.SetEvaluationTimeInSeconds(30);
+                    setup.MaximumHistoryEntriesPerEndpoint(100);
+
+                    // WebAPI kendi endpoint'i
+                    setup.AddHealthCheckEndpoint(
+                        "Egeşehir VakıfBank Virtual POS API",
+                        "/health");
+
+                    // WebUI endpoint'i (Development dışında)
+                    if (environment != "Development")
+                    {
+                        setup.AddHealthCheckEndpoint(
+                            "Egeşehir VakıfBank Virtual POS Web UI",
+                            uiOptions.BaseUrl + "/health");
+                    }
+                    else
+                    {
+                        setup.AddHealthCheckEndpoint(
+                          "Egeşehir VakıfBank Virtual POS Web UI",
+                         "https://localhost:8484/health");
+                    }
+                })
+                .AddInMemoryStorage();
 
             services.AddMapster();
             var config = TypeAdapterConfig.GlobalSettings;
@@ -317,6 +298,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IHybsService, HybsService>();
+
             return services;
         }
 
@@ -325,9 +307,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             var columnOptions = new ColumnOptions();
 
             columnOptions.Store.Remove(StandardColumn.MessageTemplate);
-
             columnOptions.Store.Add(StandardColumn.LogEvent);
-
             columnOptions.DisableTriggers = true;
 
             columnOptions.AdditionalColumns = new Collection<SqlColumn>

@@ -1,13 +1,13 @@
+﻿using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using VakifBankVirtualPOS.WebUI.Extensions;
+using VakifBankVirtualPOS.WebUI.HealthChecks;
 using VakifBankVirtualPOS.WebUI.Services.Implementations;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
 
 // Add services to the container.
 builder.Services.AddAntiforgery(options =>
@@ -18,6 +18,7 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
 });
+
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
@@ -33,6 +34,7 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebUISession";
     options.Cookie.MaxAge = TimeSpan.FromMinutes(5);
 });
+
 // HttpClient ve API servisleri
 builder.Services.AddHttpClient<IApiService, ApiService>(client =>
 {
@@ -41,10 +43,21 @@ builder.Services.AddHttpClient<IApiService, ApiService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// HttpClient for Health Checks
+builder.Services.AddHttpClient();
+
 builder.Services.AddOptionsExtensions();
+
 // API Servisleri
 builder.Services.AddScoped<IPaymentApiService, PaymentApiService>();
 builder.Services.AddScoped<IClientApiService, ClientApiService>();
+
+//  Health Checks
+builder.Services.AddHealthChecks()
+    .AddCheck<BackendApiHealthCheck>(
+        "backend-api",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "api" });
 
 var app = builder.Build();
 
@@ -61,21 +74,33 @@ else
 
 app.UseHttpsRedirection();
 
+//  Health Check Endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+    }
+});
+
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        // Cache static files for 1 year
         const int durationInSeconds = 60 * 60 * 24 * 365;
         ctx.Context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.CacheControl] =
             "public,max-age=" + durationInSeconds;
     }
 });
+
 app.UseRouting();
 app.UseSession();
 
 app.MapStaticAssets();
-
 app.MapGet("/", () => Results.Redirect("/odeme"));
 
 app.MapControllerRoute(
