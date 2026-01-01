@@ -60,6 +60,7 @@ else
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
@@ -76,12 +77,7 @@ app.UseSession();
 app.MapStaticAssets();
 
 app.MapGet("/", () => Results.Redirect("/odeme"));
-app.MapGet("/health", () => Results.Ok(new
-{
-    status = "healthy",
-    timestamp = DateTime.UtcNow
-}))
-.ExcludeFromDescription();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Payment}/{action=Index}/{id?}");

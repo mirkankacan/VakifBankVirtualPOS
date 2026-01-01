@@ -15,6 +15,11 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
         {
+            if (context.Request.Path.StartsWithSegments("/health") || context.Request.Path.StartsWithSegments("/health-ui"))
+            {
+                await _next(context);
+                return;
+            }
             // API Key kontrolü
             if (!context.Request.Headers.TryGetValue(API_KEY_HEADER, out var extractedApiKey))
             {

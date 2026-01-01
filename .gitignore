@@ -12,8 +12,6 @@
 
 /.vscode
 
-# Şifrelenmiş dosyalar
-*.enc
 
 # Production ayarları (şifrelenmemiş)
 appsettings.Production.json

@@ -2,6 +2,7 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
@@ -12,6 +13,7 @@ using System.Net;
 using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
+using VakifBankVirtualPOS.WebAPI.HealthChecks;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Middlewares;
 using VakifBankVirtualPOS.WebAPI.Options;
@@ -191,20 +193,117 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "ApiKey"
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "ApiKey"
+                        }
+                    },
+                    Array.Empty<string>()
                 }
-            },
-            Array.Empty<string>()
-        }
-    });
             });
+            });
+
+            // Health Checks
+            services.AddHealthChecks()
+                // 🗄️ Database Checks
+                .AddSqlServer(
+                    connectionString: connectionString!,
+                    healthQuery: "SELECT 1;",
+                    name: "sql-server-connection",
+                    failureStatus: HealthStatus.Unhealthy,
+                    tags: new[] { "db", "sql", "sqlserver", "ready" })
+
+                .AddCheck<DatabaseHealthCheck>(
+                    "database-operations",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "db", "custom", "ready" })
+
+                // 💾 Memory Checks
+                .AddProcessAllocatedMemoryHealthCheck(
+                    maximumMegabytesAllocated: 1024,
+                    name: "process-allocated-memory",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "memory", "performance" })
+
+                .AddPrivateMemoryHealthCheck(
+                    maximumMemoryBytes: 1024 * 1024 * 1024,
+                    name: "private-memory",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "memory", "performance" })
+
+                .AddWorkingSetHealthCheck(
+                    maximumMemoryBytes: 1024 * 1024 * 1024,
+                    name: "working-set-memory",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "memory", "performance" })
+
+                .AddVirtualMemorySizeHealthCheck(
+                    maximumMemoryBytes: 2L * 1024 * 1024 * 1024,
+                    name: "virtual-memory",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "memory", "performance" })
+
+                // 💿 Disk Storage
+                .AddDiskStorageHealthCheck(
+                    setup: options =>
+                    {
+                        options.AddDrive(driveName: "C:\\", minimumFreeMegabytes: 5000);
+                    },
+                    name: "disk-storage-c",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "disk", "storage" })
+
+                // 🌐 Network Connectivity
+                .AddPingHealthCheck(
+                    setup: options =>
+                    {
+                        options.AddHost("www.google.com", 5000);
+                    },
+                    name: "internet-connectivity",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "network", "ping" })
+
+                // 🏦 VakıfBank APIs
+                .AddUrlGroup(
+                    uri: new Uri(configuration["VakifBankOptions:EnrollmentUrl"]!),
+                    name: "vakifbank-enrollment-api",
+                    failureStatus: HealthStatus.Degraded,
+                    timeout: TimeSpan.FromSeconds(10),
+                    tags: new[] { "vakifbank", "api", "external", "ready" })
+
+                .AddUrlGroup(
+                    uri: new Uri(configuration["VakifBankOptions:VposUrl"]!),
+                    name: "vakifbank-vpos-api",
+                    failureStatus: HealthStatus.Degraded,
+                    timeout: TimeSpan.FromSeconds(10),
+                    tags: new[] { "vakifbank", "api", "external", "ready" })
+
+                // 🔌 Custom External Services
+                .AddCheck<HybsApiHealthCheck>(
+                    "hybs-api",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "external", "api", "hybs", "ready" })
+
+                .AddCheck<EmailServiceHealthCheck>(
+                    "email-smtp-service",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "email", "smtp", "external", "ready" });
+
+            // Health Checks UI
+            services
+             .AddHealthChecksUI(setup =>
+             {
+                 setup.SetEvaluationTimeInSeconds(30);
+                 setup.MaximumHistoryEntriesPerEndpoint(100);
+                 setup.AddHealthCheckEndpoint("Egeşehir VakıfBank Virtual POS API", "/health");
+             })
+             .AddSqlServerStorage(connectionString!);
+
             services.AddMapster();
             var config = TypeAdapterConfig.GlobalSettings;
             config.Scan(typeof(WebAPIAssembly).Assembly);
