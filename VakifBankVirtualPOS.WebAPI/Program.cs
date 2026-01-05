@@ -16,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOptionsExtensions();
 builder.Services.AddWebApiServices(builder.Configuration, builder.Host);
+builder.Services.AddHealthCheckServices(builder.Configuration);
 
 var app = builder.Build();
 

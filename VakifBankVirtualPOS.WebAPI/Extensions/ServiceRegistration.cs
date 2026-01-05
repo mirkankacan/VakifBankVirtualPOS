@@ -2,7 +2,6 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
@@ -13,7 +12,6 @@ using System.Net;
 using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
-using VakifBankVirtualPOS.WebAPI.HealthChecks;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Middlewares;
 using VakifBankVirtualPOS.WebAPI.Options;
@@ -31,7 +29,6 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             var connectionString = configuration.GetConnectionString("SqlConnection");
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var emailOptions = configuration.GetSection("EmailOptions").Get<EmailOptions>()!;
-            var uiOptions = configuration.GetSection("UiOptions").Get<UiOptions>()!;
 
             services.AddScoped<GlobalExceptionMiddleware>();
 
@@ -212,78 +209,6 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     }
                 });
             });
-
-            //  Health Checks
-            services.AddHealthChecks()
-                //  SQL Server Bağlantısı
-                .AddSqlServer(
-                    connectionString: connectionString!,
-                    healthQuery: "SELECT 1;",
-                    name: "sql-server",
-                    failureStatus: HealthStatus.Unhealthy,
-                    tags: new[] { "database" })
-
-                // 🗄 Database İşlemleri
-                .AddCheck<DatabaseHealthCheck>(
-                    "database-operations",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "database" })
-
-                //  VakıfBank Enrollment API
-                .AddUrlGroup(
-                    uri: new Uri(configuration["VakifBankOptions:EnrollmentUrl"]!),
-                    name: "vakifbank-enrollment",
-                    failureStatus: HealthStatus.Degraded,
-                    timeout: TimeSpan.FromSeconds(10),
-                    tags: new[] { "external" })
-
-                //  VakıfBank VPOS API
-                .AddUrlGroup(
-                    uri: new Uri(configuration["VakifBankOptions:VposUrl"]!),
-                    name: "vakifbank-vpos",
-                    failureStatus: HealthStatus.Degraded,
-                    timeout: TimeSpan.FromSeconds(10),
-                    tags: new[] { "external" })
-
-                //  HYBS API
-                .AddCheck<HybsApiHealthCheck>(
-                    "hybs-api",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "external" })
-
-                //  Email SMTP
-                .AddCheck<EmailServiceHealthCheck>(
-                    "email-smtp",
-                    failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "external" });
-
-            //  Health Checks UI
-            services
-                .AddHealthChecksUI(setup =>
-                {
-                    setup.SetEvaluationTimeInSeconds(30);
-                    setup.MaximumHistoryEntriesPerEndpoint(100);
-
-                    // WebAPI kendi endpoint'i
-                    setup.AddHealthCheckEndpoint(
-                        "Egeşehir VakıfBank Virtual POS API",
-                        "/health");
-
-                    // WebUI endpoint'i (Development dışında)
-                    if (environment != "Development")
-                    {
-                        setup.AddHealthCheckEndpoint(
-                            "Egeşehir VakıfBank Virtual POS Web UI",
-                            uiOptions.BaseUrl + "/health");
-                    }
-                    else
-                    {
-                        setup.AddHealthCheckEndpoint(
-                          "Egeşehir VakıfBank Virtual POS Web UI",
-                         "https://localhost:8484/health");
-                    }
-                })
-                .AddInMemoryStorage();
 
             services.AddMapster();
             var config = TypeAdapterConfig.GlobalSettings;
