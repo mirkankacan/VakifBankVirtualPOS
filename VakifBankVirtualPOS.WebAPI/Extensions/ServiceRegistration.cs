@@ -1,4 +1,8 @@
-﻿using Carter;
+﻿using System.Collections.ObjectModel;
+using System.Data;
+using System.Net;
+using System.Threading.RateLimiting;
+using Carter;
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,17 +10,11 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
-using System.Collections.ObjectModel;
-using System.Data;
-using System.Net;
-using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Middlewares;
 using VakifBankVirtualPOS.WebAPI.Options;
-using VakifBankVirtualPOS.WebAPI.Repositories.Implementations;
-using VakifBankVirtualPOS.WebAPI.Repositories.Interfaces;
 using VakifBankVirtualPOS.WebAPI.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
@@ -217,9 +215,8 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddCarter();
             services.AddEndpointsApiExplorer();
 
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IEmailService, EmailService>();
-            services.AddScoped<IPaymentRepository, PaymentRepository>();
-            services.AddScoped<IClientRepository, ClientRepository>();
             services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IHybsService, HybsService>();

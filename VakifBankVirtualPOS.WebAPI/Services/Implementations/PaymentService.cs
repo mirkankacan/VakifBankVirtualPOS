@@ -1,13 +1,14 @@
 ﻿using Mapster;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using VakifBankPayment.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Common;
 using VakifBankVirtualPOS.WebAPI.Constants;
+using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Data.Entities;
 using VakifBankVirtualPOS.WebAPI.Dtos.PaymentDtos;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Options;
-using VakifBankVirtualPOS.WebAPI.Repositories.Interfaces;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
 namespace VakifBankPayment.Services.Implementations
@@ -20,8 +21,8 @@ namespace VakifBankPayment.Services.Implementations
         private readonly VakifBankOptions _options;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<PaymentService> _logger;
-        private readonly IPaymentRepository _paymentRepository;
-        private readonly IClientRepository _clientRepository;
+        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IEmailService _emailService;
 
@@ -29,16 +30,16 @@ namespace VakifBankPayment.Services.Implementations
             VakifBankOptions options,
             IHttpClientFactory httpClientFactory,
             ILogger<PaymentService> logger,
-            IPaymentRepository paymentRepository,
-            IClientRepository clientRepository,
+            AppDbContext context,
+            IUnitOfWork unitOfWork,
             IHttpContextAccessor httpContextAccessor,
             IEmailService emailService)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
-            _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
@@ -47,7 +48,9 @@ namespace VakifBankPayment.Services.Implementations
         {
             try
             {
-                var payment = await _paymentRepository.GetByOrderIdAsync(orderId, cancellationToken);
+                var payment = await _context.IDT_VAKIFBANK_ODEME
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
 
                 if (payment == null)
                 {
@@ -58,7 +61,7 @@ namespace VakifBankPayment.Services.Implementations
                 }
                 var mappedPayment = payment.Adapt<PaymentResultDto>();
                 mappedPayment.IsSuccess = payment.Status.ToUpper() == "SUCCESS" && payment.ResultCode == "0000" ? true : false;
-                return ServiceResult<PaymentResultDto>.SuccessAsOk(payment.Adapt<PaymentResultDto>());
+                return ServiceResult<PaymentResultDto>.SuccessAsOk(mappedPayment);
             }
             catch (Exception ex)
             {
@@ -159,7 +162,7 @@ namespace VakifBankPayment.Services.Implementations
                 enrollmentResponse.OrderId = orderId;
 
                 // 11. Veritabanına kaydet
-                var payment = await _paymentRepository.CreateAsync(new IDT_VAKIFBANK_ODEME
+                var payment = new IDT_VAKIFBANK_ODEME
                 {
                     OrderId = orderId,
                     Amount = request.Amount,
@@ -171,8 +174,12 @@ namespace VakifBankPayment.Services.Implementations
                     ThreeDSecureStatus = enrollmentResponse.Status,
                     ClientIp = clientIp,
                     ClientCode = request.ClientCode,
-                    DocumentNo = request.DocumentNo ?? null
-                }, cancellationToken);
+                    DocumentNo = request.DocumentNo ?? null,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _context.IDT_VAKIFBANK_ODEME.AddAsync(payment, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                 _logger.LogInformation("3D Secure başarıyla başlatıldı. OrderId: {OrderId}, Status: {Status}",
                     orderId, enrollmentResponse.Status);
@@ -189,9 +196,7 @@ namespace VakifBankPayment.Services.Implementations
         /// <summary>
         /// 3D Secure doğrulama sonrası ödemeyi tamamlar
         /// </summary>
-        public async Task<ServiceResult<PaymentResultDto>> CompletePaymentAsync(
-            ThreeDCallbackDto callback,
-            CancellationToken cancellationToken)
+        public async Task<ServiceResult<PaymentResultDto>> CompletePaymentAsync(ThreeDCallbackDto callback, CancellationToken cancellationToken)
         {
             if (callback == null)
             {
@@ -281,42 +286,95 @@ namespace VakifBankPayment.Services.Implementations
                 // 7. Cevabı parse et
                 var paymentResult = ParseVposResponse(xmlResponse);
 
-                // 9. Sonucu kontrol et ve veritabanını güncelle
-                if (!paymentResult.IsSuccess)
+                // 9. Transaction başlat
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+                try
                 {
-                    await _paymentRepository.UpdateByOrderIdAsync(
-                        orderId: orderId,
-                        status: "Failed",
-                        cancellationToken: cancellationToken,
-                        transactionId: paymentResult.TransactionId,
-                        resultCode: paymentResult.ResultCode,
-                        errorMessage: paymentResult.Message
-                    );
-                    await _emailService.SendPaymentFailedMailAsync(orderId, cancellationToken);
-                    _logger.LogError("Ödeme başarısız. OrderId: {OrderId}, ErrorCode: {ErrorCode}, Message: {Message}",
-                        orderId, paymentResult.ResultCode, paymentResult.Message);
+                    // 10. Sonucu kontrol et ve veritabanını güncelle
+                    var payment = await _context.IDT_VAKIFBANK_ODEME
+                        .FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
 
-                    return ServiceResult<PaymentResultDto>.Error(
-                        "Ödeme Başarısız",
-                        paymentResult.Message,
-                        HttpStatusCode.BadRequest);
+                    if (payment == null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                        _logger.LogError("Güncellenecek ödeme kaydı bulunamadı. OrderId: {OrderId}", orderId);
+                        return ServiceResult<PaymentResultDto>.Error(
+                            "Ödeme Bulunamadı",
+                            $"OrderId: {orderId} ile ödeme kaydı bulunamadı",
+                            HttpStatusCode.NotFound);
+                    }
+
+                    if (!paymentResult.IsSuccess)
+                    {
+                        // Ödeme başarısız - güncelle ve rollback
+                        payment.Status = "Failed";
+                        payment.UpdatedAt = DateTime.Now;
+                        payment.TransactionId = paymentResult.TransactionId;
+                        payment.ResultCode = paymentResult.ResultCode;
+                        payment.ErrorMessage = paymentResult.Message;
+                        payment.CompletedAt = DateTime.Now;
+
+                        _context.IDT_VAKIFBANK_ODEME.Update(payment);
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+                        await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                        await _emailService.SendPaymentFailedMailAsync(orderId, cancellationToken);
+                        _logger.LogError("Ödeme başarısız. OrderId: {OrderId}, ErrorCode: {ErrorCode}, Message: {Message}",
+                            orderId, paymentResult.ResultCode, paymentResult.Message);
+
+                        return ServiceResult<PaymentResultDto>.Error(
+                            "Ödeme Başarısız",
+                            paymentResult.Message,
+                            HttpStatusCode.BadRequest);
+                    }
+
+                    // Ödeme başarılı - güncelle
+                    payment.Status = "Success";
+                    payment.UpdatedAt = DateTime.Now;
+                    payment.TransactionId = paymentResult.TransactionId;
+                    payment.AuthCode = paymentResult.AuthCode;
+                    payment.ResultCode = paymentResult.ResultCode;
+                    payment.CompletedAt = DateTime.Now;
+
+                    _context.IDT_VAKIFBANK_ODEME.Update(payment);
+
+                    // Cari hareket oluştur
+                    var newTransaction = new IDT_CARI_HAREKET()
+                    {
+                        ACIKLAMA = payment.OrderId,
+                        CARI_KODU = payment.ClientCode,
+                        BELGE_NO = payment.DocumentNo ?? null,
+                        TARIH = payment.CompletedAt.Value,
+                        BORC = payment.Amount,
+                        ALACAK = 0,
+                        BAKIYE = null,
+                        HAREKET_TIPI = "G",
+                        KAYIT_KULL = null,
+                        KAYIT_ZAMAN = DateTime.Now,
+                        AKTARIM = 0
+                    };
+
+                    await _context.IDT_CARI_HAREKET.AddAsync(newTransaction, cancellationToken);
+
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                    _logger.LogInformation("Cari hareket kaydı oluşturuldu. OrderId: {OrderId}, Id: {Id}",
+                        newTransaction.ACIKLAMA, newTransaction.ID);
+
+                    await _emailService.SendPaymentSuccessMailAsync(orderId, cancellationToken);
+                    _logger.LogInformation("Ödeme başarılı. OrderId: {OrderId}, TransactionId: {TransactionId}, AuthCode: {AuthCode}, 3DStatus: {Status}",
+                        orderId, paymentResult.TransactionId, paymentResult.AuthCode, callback.Status);
+
+                    return ServiceResult<PaymentResultDto>.SuccessAsOk(paymentResult);
                 }
-
-                await _paymentRepository.UpdateByOrderIdAsync(
-                    orderId: orderId,
-                    status: "Success",
-                    cancellationToken: cancellationToken,
-                    resultCode: paymentResult.ResultCode,
-                    transactionId: paymentResult.TransactionId,
-                    authCode: paymentResult.AuthCode
-                );
-
-                await _clientRepository.CreateTransactionAsync(orderId, cancellationToken);
-                await _emailService.SendPaymentSuccessMailAsync(orderId, cancellationToken);
-                _logger.LogInformation("Ödeme başarılı. OrderId: {OrderId}, TransactionId: {TransactionId}, AuthCode: {AuthCode}, 3DStatus: {Status}",
-                    orderId, paymentResult.TransactionId, paymentResult.AuthCode, callback.Status);
-
-                return ServiceResult<PaymentResultDto>.SuccessAsOk(paymentResult);
+                catch (Exception ex)
+                {
+                    await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                    _logger.LogError(ex, "Ödeme tamamlama işlemi sırasında hata oluştu. OrderId: {OrderId}", orderId);
+                    throw;
+                }
             }
             catch (Exception ex)
             {

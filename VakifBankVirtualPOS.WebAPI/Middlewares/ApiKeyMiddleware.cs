@@ -14,7 +14,8 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
         "/health-ui",
         "/health-ui-api",
         "/health-ui-resources",
-        "/health-ui-webhook"
+        "/health-ui-webhook",
+        "/api/payments/3d-callback"
     };
 
         public ApiKeyMiddleware(RequestDelegate next)

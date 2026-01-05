@@ -1,11 +1,12 @@
 ﻿using Humanizer;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using System.Globalization;
 using System.Net;
+using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Options;
-using VakifBankVirtualPOS.WebAPI.Repositories.Interfaces;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
 
 namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
@@ -13,23 +14,23 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
     public class EmailService : IEmailService
     {
         private readonly EmailOptions _options;
-        private readonly IPaymentRepository _paymentRepository;
-        private readonly IClientRepository _clientRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<EmailService> _logger;
         private readonly IWebHostEnvironment _environment;
 
-        public EmailService(EmailOptions options, ILogger<EmailService> logger, IClientRepository clientRepository, IPaymentRepository paymentRepository, IWebHostEnvironment environment)
+        public EmailService(EmailOptions options, ILogger<EmailService> logger, AppDbContext context, IWebHostEnvironment environment)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));
-            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         }
 
         public async Task SendPaymentFailedMailAsync(string orderId, CancellationToken cancellationToken)
         {
-            var payment = await _paymentRepository.GetByOrderIdAsync(orderId, cancellationToken);
+            var payment = await _context.IDT_VAKIFBANK_ODEME
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
             if (payment == null)
             {
                 _logger.LogWarning($"{orderId} kodlu ödeme bulunamadı");
@@ -64,13 +65,17 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
 
         public async Task SendPaymentSuccessMailAsync(string orderId, CancellationToken cancellationToken)
         {
-            var payment = await _paymentRepository.GetByOrderIdAsync(orderId, cancellationToken);
+            var payment = await _context.IDT_VAKIFBANK_ODEME
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.OrderId == orderId, cancellationToken);
             if (payment == null)
             {
                 _logger.LogWarning($"{orderId} kodlu ödeme bulunamadı");
                 return;
             }
-            var client = await _clientRepository.GetByCodeAsync(payment.ClientCode, cancellationToken);
+            var client = await _context.IDT_CARI_KAYIT
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.CARI_KOD == payment.ClientCode, cancellationToken);
             if (client == null)
             {
                 _logger.LogWarning($"{payment.ClientCode} kodlu cari bulunamadı");

@@ -73,7 +73,7 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
             var orderId = HttpContext.Session.GetString("OrderId");
 
             // Session kontrolü
-            if (string.IsNullOrEmpty(acsUrl) || string.IsNullOrEmpty(paReq))
+            if (string.IsNullOrEmpty(acsUrl))
             {
                 _logger.LogWarning("3D Secure verisi bulunamadı");
                 return RedirectToAction(nameof(Failed));
