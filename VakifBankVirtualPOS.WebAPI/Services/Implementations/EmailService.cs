@@ -1,10 +1,10 @@
-﻿using Humanizer;
+﻿using System.Globalization;
+using System.Net;
+using Humanizer;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
-using System.Globalization;
-using System.Net;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Options;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
@@ -56,7 +56,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                         .Replace("{{OrderId}}", WebUtility.HtmlEncode(payment.OrderId))
                         .Replace("{{CreatedAt}}", payment.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
                         .Replace("{{CompletedAt}}", payment.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm:ss"))
-                        .Replace("{{ThreeDSecureStatus}}", WebUtility.HtmlEncode(payment.ThreeDSecureStatus))
+                        .Replace("{{ThreeDSecureStatus}}", WebUtility.HtmlEncode(GetThreeDSecureStatusMessage(payment.ThreeDSecureStatus)))
                         .Replace("{{ResultCode}}", WebUtility.HtmlEncode(payment.ResultCode))
                         .Replace("{{ErrorMessage}}", WebUtility.HtmlEncode(payment.ErrorMessage));
             const string subject = "❌ VAKIFBANK/EGESEHIR E-Tahsilat Ödemede Hata";
@@ -104,7 +104,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                           .Replace("{{CardBrand}}", WebUtility.HtmlEncode(payment.CardBrand))
                           .Replace("{{CardHolderName}}", WebUtility.HtmlEncode(payment.CardHolderName))
                           .Replace("{{MaskedCardNumber}}", WebUtility.HtmlEncode(payment.MaskedCardNumber));
-            const string subject = "✅ VAKIFBANK/EGESEHIR E-Tahsilat Ödemesi Başarılı";
+            string subject = $"✅ VAKIFBANK/EGESEHIR {client.CARI_ISIM} E-Tahsilat Ödemesi Başarılı";
             await SendInternalAsync(subject, body, null, null, null, isHtml: true, isError: false, cancellationToken);
         }
 
@@ -235,6 +235,22 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 _logger.LogError(ex, "Mail template okunurken hata oluştu. Template: {Template}", templateFileName);
                 return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// 3D Secure durumu mesajını döndürür
+        /// </summary>
+        private string GetThreeDSecureStatusMessage(string status)
+        {
+            return status switch
+            {
+                "Y" => "3D Secure doğrulama başarılı (Full Secure)",
+                "A" => "3D Secure doğrulama kısmen başarılı (Half Secure)",
+                "N" => "Kart 3D Secure programına kayıtlı değil veya işlem reddedildi",
+                "U" => "3D Secure doğrulama tamamlanamadı",
+                "E" => "3D Secure doğrulama hatası",
+                _ => $"Bilinmeyen durum: {status}"
+            };
         }
     }
 }

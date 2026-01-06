@@ -1,8 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Data;
-using System.Net;
-using System.Threading.RateLimiting;
-using Carter;
+﻿using Carter;
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +6,10 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Net;
+using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Helpers;
@@ -222,6 +222,25 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
             services.AddScoped<IHybsService, HybsService>();
 
             return services;
+        }
+
+        public static IApplicationBuilder UseWebApiServices(this IApplicationBuilder app)
+        {
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "EgesehirVakifBankVirtualPOS.WebAPI v1");
+                options.RoutePrefix = "swagger";
+            });
+
+            app.UseSession();
+            app.UseMiddleware<ApiKeyMiddleware>();
+            app.UseRateLimiter();
+            app.UseMiddleware<GlobalExceptionMiddleware>();
+            return app;
         }
 
         private static ColumnOptions GetColumnOptions()

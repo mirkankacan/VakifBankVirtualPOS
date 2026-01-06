@@ -40,7 +40,7 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 var clientDetails = await _hybsService.GetClientDetailByNoAsync(no, cancellationToken);
                 if (clientDetails == null)
                 {
-                    return ServiceResult<ClientDto>.Error("HYBS sisteminde cari bilgileri bulunamadı", HttpStatusCode.NotFound);
+                    return ServiceResult<ClientDto>.Error("HYBS Sisteminde Bulunamadı", "HYBS sisteminde cari bilgileri bulunamadı", HttpStatusCode.NotFound);
                 }
                 var newClient = await CreateClientAsync(clientDetails, cancellationToken);
                 if (newClient == null)

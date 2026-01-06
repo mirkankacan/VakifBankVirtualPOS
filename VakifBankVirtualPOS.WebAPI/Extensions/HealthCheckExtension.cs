@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using VakifBankVirtualPOS.WebAPI.HealthChecks;
 using VakifBankVirtualPOS.WebAPI.Options;
 
@@ -85,6 +87,34 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                 .AddInMemoryStorage();
 
             return services;
+        }
+
+        public static IEndpointRouteBuilder MapHealthCheckServices(this IEndpointRouteBuilder app)
+        {
+            // Health Check Endpoint
+            app.MapHealthChecks("/health", new HealthCheckOptions
+            {
+                Predicate = _ => true,
+                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+                ResultStatusCodes =
+                {
+                    [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                    [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                    [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+                }
+            })
+            .AllowAnonymous();
+
+            //  Health UI Dashboard
+            app.MapHealthChecksUI(setup =>
+            {
+                setup.UIPath = "/health-ui";
+                setup.ApiPath = "/health-ui-api";
+                setup.ResourcesPath = "/health-ui-resources";
+                setup.WebhookPath = "/health-ui-webhook";
+            })
+            .AllowAnonymous();
+            return app;
         }
     }
 }

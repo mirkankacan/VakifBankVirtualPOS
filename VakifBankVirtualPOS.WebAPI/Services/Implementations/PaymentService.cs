@@ -233,7 +233,7 @@ namespace VakifBankPayment.Services.Implementations
                 // 2. Status kontrolü (Y veya A olmalı)
                 if (callback.Status != "Y" && callback.Status != "A")
                 {
-                    var statusMessage = GetStatusMessage(callback.Status);
+                    var statusMessage = GetThreeDSecureStatusMessage(callback.Status);
                     _logger.LogWarning("3D Secure Status başarısız. Status: {Status}", callback.Status);
 
                     return ServiceResult<PaymentResultDto>.Error(
@@ -267,11 +267,7 @@ namespace VakifBankPayment.Services.Implementations
                     ClientIp = clientIp,
                     OrderId = orderId,
                     TransactionDeviceSource = _options.TransactionDeviceSource,
-
-                    // 3D Secure için ZORUNLU alanlar
-                    MpiTransactionId = callback.VerifyEnrollmentRequestId, // ZORUNLU
-
-                    // 3D Secure için OPSİYONEL alanlar (ama önerilir)
+                    MpiTransactionId = callback.VerifyEnrollmentRequestId,
                     ECI = callback.ECI,
                     CAVV = callback.CAVV,
                 };
@@ -301,13 +297,13 @@ namespace VakifBankPayment.Services.Implementations
                         _logger.LogError("Güncellenecek ödeme kaydı bulunamadı. OrderId: {OrderId}", orderId);
                         return ServiceResult<PaymentResultDto>.Error(
                             "Ödeme Bulunamadı",
-                            $"OrderId: {orderId} ile ödeme kaydı bulunamadı",
+                            $"{orderId} ödeme no ile ödeme kaydı bulunamadı",
                             HttpStatusCode.NotFound);
                     }
 
                     if (!paymentResult.IsSuccess)
                     {
-                        // Ödeme başarısız - güncelle ve rollback
+                        // Ödeme başarısız - güncelle
                         payment.Status = "Failed";
                         payment.UpdatedAt = DateTime.Now;
                         payment.TransactionId = paymentResult.TransactionId;
@@ -351,7 +347,7 @@ namespace VakifBankPayment.Services.Implementations
                         BAKIYE = null,
                         HAREKET_TIPI = "G",
                         KAYIT_KULL = null,
-                        KAYIT_ZAMAN = DateTime.Now,
+                        KAYIT_ZAMAN = payment.CompletedAt.Value,
                         AKTARIM = 0
                     };
 
@@ -422,7 +418,7 @@ namespace VakifBankPayment.Services.Implementations
                     var errorCode = XmlHelper.GetElementValue(xmlResponse, "ErrorCode");
                     var errorMessage = XmlHelper.GetElementValue(xmlResponse, "ErrorMessage");
                 }
-                result.Message = GetStatusMessage(result.Status);
+                result.Message = GetThreeDSecureStatusMessage(result.Status);
 
                 return result;
             }
@@ -466,9 +462,9 @@ namespace VakifBankPayment.Services.Implementations
         }
 
         /// <summary>
-        /// Status mesajını döndürür
+        /// 3D Secure durumu mesajını döndürür
         /// </summary>
-        private string GetStatusMessage(string status)
+        private string GetThreeDSecureStatusMessage(string status)
         {
             return status switch
             {
