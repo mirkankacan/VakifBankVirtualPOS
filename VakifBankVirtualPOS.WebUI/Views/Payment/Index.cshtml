@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Ödeme Yap";
+    ViewData["NoIndex"] = false;
+
 }
 
 <div class="row" id="searchFormContainer">
@@ -49,7 +51,7 @@
                     <div class="col-md-12">
                         <label for="txtCardHolderName" class="form-label">Kart Üstündeki İsim Soyisim</label>
                         <input type="text" class="form-control" id="txtCardHolderName" value="" required
-                            style="text-transform: uppercase;" pattern="[A-ZİĞÜŞÇÖ\s]+" />
+                               style="text-transform: uppercase;" pattern="[A-ZİĞÜŞÇÖ\s]+" />
                         <div class="valid-feedback">
                         </div>
                         <div class="invalid-feedback">
@@ -59,7 +61,7 @@
                     <div class="col-md-12">
                         <label for="txtCardNumber" class="form-label">Kart Numarası</label>
                         <input type="text" class="form-control" id="txtCardNumber" value=""
-                            placeholder="0000 0000 0000 0000" required>
+                               placeholder="0000 0000 0000 0000" required>
                         <div class="valid-feedback">
                         </div>
                         <div class="invalid-feedback">
@@ -69,7 +71,7 @@
                     <div class="col-md-6">
                         <label for="txtExpMonthYear" class="form-label">Kart Son Kullanma Tarihi</label>
                         <input type="text" class="form-control" id="txtExpMonthYear" placeholder="AA/YY (örn: 12/25)"
-                            value="" required>
+                               value="" required>
                         <div class="valid-feedback">
                         </div>
                         <div class="invalid-feedback">
@@ -114,7 +116,18 @@
             $('#txtCardNumber').mask('0000 0000 0000 0000'); // Kart numarası
             $('#txtExpMonthYear').mask('00/00'); // AA/YY formatı
             $('#txtCvv').mask('0000'); // CVV (3-4 hane)
-            $('#txtAmount').mask('#.##0,00', { reverse: true }); // Tutar (Türkçe format)
+                 $('#txtAmount').inputmask('decimal', {
+            alias: "numeric",
+                    groupSeparator: ".",
+                    autoGroup:true,
+                    digits: 2,
+                    radixPoint: ',',
+                    digitsOptional: false,
+                    allowMinus: false,
+                    rightAlign: false,
+                    prefix: "₺ ",
+                    suffix: ""
+        });
 
             // Kart üstündeki isim alanını her zaman büyük harfe çevir ve sadece harf kabul et (Türkçe karakter desteği ile)
             $('#txtCardHolderName').on('input', function () {
@@ -315,8 +328,8 @@
                         toastr.error('Lütfen tutar giriniz.');
                         return;
                     }
-                    let cleanAmount = amountInput.replace(/\./g, '').replace(',', '.');
-                    amount = parseFloat(cleanAmount);
+                 let cleanAmount = amountInput.replace('₺', '').trim().replace(/\./g, '').replace(',', '.');
+                        amount = parseFloat(cleanAmount);
                     if (isNaN(amount) || amount <= 0) {
                         toastr.error('Geçerli bir tutar giriniz.');
                         return;

@@ -32,11 +32,11 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         /// Ödeme işlemini başlatır ve 3D Secure sürecini başlatır
         /// </summary>
         [HttpPost("baslat")]
-        public async Task<IActionResult> Initiate([FromBody] PaymentInitiateViewModel model)
+        public async Task<IActionResult> Initiate([FromBody] PaymentInitiateViewModel model, CancellationToken cancellationToken)
         {
             try
             {
-                var result = await _paymentApiService.InitiateThreeDSecureAsync(model);
+                var result = await _paymentApiService.InitiateThreeDSecureAsync(model, cancellationToken);
 
                 if (!result.IsSuccess)
                 {
@@ -51,7 +51,7 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
                 HttpContext.Session.SetString("Status", result.Data.Status);
                 HttpContext.Session.SetString("Message", result.Data.Message);
 
-                return Ok(new { redirectUrl = Url.Action("ThreeDSecure", "Payment") });
+                return Ok(new { redirectUrl = Url.Action("ThreeDRedirect", "Payment") });
             }
             catch (Exception ex)
             {
@@ -63,8 +63,8 @@ namespace VakifBankVirtualPOS.WebUI.Controllers
         /// <summary>
         /// 3D Secure yönlendirme sayfası
         /// </summary>
-        [HttpGet("3d-dogrulama")]
-        public IActionResult ThreeDSecure()
+        [HttpGet("3d-yonlendirme")]
+        public IActionResult ThreeDRedirect()
         {
             var acsUrl = HttpContext.Session.GetString("ACSUrl");
             var paReq = HttpContext.Session.GetString("PAReq");

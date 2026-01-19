@@ -25,7 +25,13 @@ namespace VakifBankVirtualPOS.WebAPI.Middlewares
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
         {
-            if (BypassPaths.Any(path => context.Request.Path.StartsWithSegments(path)))
+            var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+
+            var shouldBypass = BypassPaths.Any(bypassPath =>
+                path.Equals(bypassPath, StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith(bypassPath + "/", StringComparison.OrdinalIgnoreCase));
+
+            if (shouldBypass)
             {
                 await _next(context);
                 return;

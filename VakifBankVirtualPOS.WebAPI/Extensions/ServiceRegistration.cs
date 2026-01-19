@@ -12,6 +12,7 @@ using System.Net;
 using System.Threading.RateLimiting;
 using VakifBankPayment.Services.Implementations;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
+using VakifBankVirtualPOS.WebAPI.Data.Interceptors;
 using VakifBankVirtualPOS.WebAPI.Helpers;
 using VakifBankVirtualPOS.WebAPI.Middlewares;
 using VakifBankVirtualPOS.WebAPI.Options;
@@ -26,26 +27,30 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
         {
             var connectionString = configuration.GetConnectionString("SqlConnection");
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            var emailOptions = configuration.GetSection("EmailOptions").Get<EmailOptions>()!;
+            var emailOptions = configuration.GetSection(nameof(EmailOptions)).Get<EmailOptions>()!;
 
             services.AddScoped<GlobalExceptionMiddleware>();
-
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(connectionString));
-
-            services.AddHttpClient();
+            services.AddScoped<AuditLogInterceptor>();
             services.AddHttpContextAccessor();
+            services.AddHttpClient();
+
+            services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+            {
+                options.UseSqlServer(connectionString);
+                options.AddInterceptors(serviceProvider.GetRequiredService<AuditLogInterceptor>());
+            });
+
             services.AddDistributedMemoryCache();
 
             services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(5);
+                options.IdleTimeout = TimeSpan.FromMinutes(10);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.Name = ".EgesehirVakifBankVirtualPOS.WebAPISession";
-                options.Cookie.MaxAge = TimeSpan.FromMinutes(5);
+                options.Cookie.MaxAge = TimeSpan.FromMinutes(10);
             });
 
             services.AddRateLimiter(options =>

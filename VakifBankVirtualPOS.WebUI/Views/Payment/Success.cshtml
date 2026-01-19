@@ -1,6 +1,8 @@
 ﻿@model VakifBankVirtualPOS.WebUI.Models.PaymentViewModels.PaymentResultViewModel
 @{
     ViewData["Title"] = "Ödeme Başarılı";
+    ViewData["NoIndex"] = true;
+
 }
 
 <div class="row">
@@ -24,7 +26,7 @@
                             </span>
                         </h3>
                     }
-           
+
                     <div class="mt-4">
                         <a href="@Url.Action("Index", "Payment")" class="btn btn-egesehir">
                             <i class="fa-solid fa-home mx-2"></i>Ödeme Sayfasına Dön

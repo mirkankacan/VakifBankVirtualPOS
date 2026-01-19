@@ -24,7 +24,7 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     failureStatus: HealthStatus.Unhealthy,
                     tags: new[] { "database" })
 
-                // 🗄 Database İşlemleri
+                //  Database İşlemleri
                 .AddCheck<DatabaseHealthCheck>(
                     "database-operations",
                     failureStatus: HealthStatus.Degraded,
@@ -44,12 +44,6 @@ namespace VakifBankVirtualPOS.WebAPI.Extensions
                     name: "vakifbank-vpos",
                     failureStatus: HealthStatus.Degraded,
                     timeout: TimeSpan.FromSeconds(10),
-                    tags: new[] { "external" })
-
-                //  HYBS API
-                .AddCheck<HybsApiHealthCheck>(
-                    "hybs-api",
-                    failureStatus: HealthStatus.Degraded,
                     tags: new[] { "external" })
 
                 //  Email SMTP

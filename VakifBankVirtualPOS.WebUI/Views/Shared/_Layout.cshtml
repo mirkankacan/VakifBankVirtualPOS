@@ -6,7 +6,37 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="İdeaktif Danışmanlık ve Yazılım Ltd.">
+    @if (ViewData["NoIndex"] != null && (bool)ViewData["NoIndex"])
+    {
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <meta name="referrer" content="no-referrer">
+    }
+    else
+    {
+        <meta name="description" content="Egeşehir hafriyat depolama sahaları ödeme sistemi. Hafriyat sahası ücretlerinizi güvenli online ödeme ile 7/24 kolayca ödeyebilirsiniz. Tüm banka kartları kabul edilir.">
+        <meta name="keywords" content="egeşehir ödeme, hafriyat sahası ödeme, hafriyat depolama ödeme, online hafriyat ödemesi, egeşehir hafriyat, güvenli ödeme sistemi, hafriyat ücreti ödeme">
+        <meta name="robots" content="index, follow">
+        <meta name="author" content="Egeşehir Yapı Planlama Müşavirlik ve Teknoloji A.Ş.">
 
+        <!-- Canonical URL -->
+        <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="@ViewData["Title"] • Egeşehir E-Tahsilat">
+        <meta property="og:description" content="Egeşehir hafriyat depolama sahaları ödeme sistemi. Hafriyat sahası ücretlerinizi güvenli online ödeme ile 7/24 kolayca ödeyebilirsiniz.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+        <meta property="og:site_name" content="Egeşehir E-Tahsilat">
+        <meta property="og:locale" content="tr_TR">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="@ViewData["Title"] • Egeşehir E-Tahsilat">
+        <meta name="twitter:description" content="Egeşehir hafriyat depolama sahaları ödeme sistemi. Hafriyat sahası ücretlerinizi güvenli online ödeme ile 7/24 kolayca ödeyebilirsiniz.">
+    }
     <!-- Favicon dosyaları -->
     <link rel="icon" type="image/png" sizes="16x16" href="~/theme/assets/favicons/favicon-16.png">
     <link rel="icon" type="image/png" sizes="30x30" href="~/theme/assets/favicons/favicon-30.png">
@@ -20,8 +50,8 @@
     <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,700,800&display=swap" rel="stylesheet">
     <link href="~/theme/assets/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
-        integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+          integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="~/theme/assets/plugins/perfectscroll/perfect-scrollbar.css" rel="stylesheet">
     <!-- Theme Styles -->
     <link href="~/theme/assets/css/main.min.css" rel="stylesheet">
@@ -37,32 +67,32 @@
             color: #ffffff;
         }
 
-        .btn-egesehir:hover,
-        .btn-egesehir.focus,
-        .btn-egesehir:focus,
-        .btn-egesehir:not(:disabled):not(.disabled).active,
-        .btn-egesehir:not(:disabled):not(.disabled):active {
-            background-color: #9c182f;
-            border-color: #9c182f;
-            color: #ffffff;
-            box-shadow: 0 7px 23px -8px #ffffff;
-        }
+            .btn-egesehir:hover,
+            .btn-egesehir.focus,
+            .btn-egesehir:focus,
+            .btn-egesehir:not(:disabled):not(.disabled).active,
+            .btn-egesehir:not(:disabled):not(.disabled):active {
+                background-color: #9c182f;
+                border-color: #9c182f;
+                color: #ffffff;
+                box-shadow: 0 7px 23px -8px #ffffff;
+            }
 
         .btn-outline-egesehir {
             color: #9c182f;
             border-color: #9c182f;
         }
 
-        .btn-outline-egesehir:hover,
-        .btn-outline-egesehir.focus,
-        .btn-outline-egesehir:focus,
-        .btn-outline-egesehir:not(:disabled):not(.disabled).active,
-        .btn-outline-egesehir:not(:disabled):not(.disabled):active {
-            color: #ffffff;
-            border-color: #9c182f;
-            background-color: #9c182f;
-            box-shadow: 0 7px 23px -8px #9c182f;
-        }
+            .btn-outline-egesehir:hover,
+            .btn-outline-egesehir.focus,
+            .btn-outline-egesehir:focus,
+            .btn-outline-egesehir:not(:disabled):not(.disabled).active,
+            .btn-outline-egesehir:not(:disabled):not(.disabled):active {
+                color: #ffffff;
+                border-color: #9c182f;
+                background-color: #9c182f;
+                box-shadow: 0 7px 23px -8px #9c182f;
+            }
 
         .page-container {
             background-image: url('/theme/assets/images/City.png');
@@ -102,7 +132,7 @@
                     <div class="col-sm-6">
                         <div class="text-sm-end d-none d-sm-block">
                             <a href="https://www.ideaktif.com.tr" target="_blank" style="color:#5b5b5b">
-                                2025 © İdeaktif
+                                2025 - @DateTime.Now.Year © İdeaktif
                                 Danışmanlık ve Yazılım Ltd.
                             </a>
                         </div>
@@ -119,11 +149,12 @@
     <script src="~/theme/assets/plugins/bootstrap/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/js/all.min.js"
-        integrity="sha512-gBYquPLlR76UWqCwD06/xwal4so02RjIR0oyG1TIhSGwmBTRrIkQbaPehPF8iwuY9jFikDHMGEelt0DtY7jtvQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            integrity="sha512-gBYquPLlR76UWqCwD06/xwal4so02RjIR0oyG1TIhSGwmBTRrIkQbaPehPF8iwuY9jFikDHMGEelt0DtY7jtvQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="~/theme/assets/plugins/perfectscroll/perfect-scrollbar.min.js"></script>
     <script src="~/theme/assets/plugins/blockui/jquery.blockUI.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js" integrity="sha512-pHVGpX7F/27yZ0ISY+VVjyULApbDlD0/X0rgGbTqCE7WFW5MezNTWG/dnhtbBuICzsd0WQPgpE4REBLv+UqChw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.9/jquery.inputmask.min.js" integrity="sha512-F5Ul1uuyFlGnIT1dk2c4kB4DBdi5wnBJjVhL7gQlGh46Xn0VhvD8kgxLtjdZ5YN83gybk/aASUAlpdoWUjRR3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="~/theme/assets/js/main.min.js"></script>
     <script src="~/theme/assets/js/customtoastr.js"></script>
     <script src="~/theme/assets/js/http-client.js"></script>

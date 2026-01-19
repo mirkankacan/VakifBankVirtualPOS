@@ -13,10 +13,35 @@ namespace VakifBankVirtualPOS.WebAPI.Data.Context
         public DbSet<IDT_VAKIFBANK_ODEME> IDT_VAKIFBANK_ODEME => Set<IDT_VAKIFBANK_ODEME>();
         public DbSet<IDT_CARI_KAYIT> IDT_CARI_KAYIT => Set<IDT_CARI_KAYIT>();
         public DbSet<IDT_API_KEY> IDT_API_KEY => Set<IDT_API_KEY>();
+        public DbSet<IDT_AUDIT_LOG> IDT_AUDIT_LOG => Set<IDT_AUDIT_LOG>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<IDT_AUDIT_LOG>(entity =>
+            {
+                entity.ToTable("IDT_AUDIT_LOG");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.ClientCode)
+                    .IsRequired(false)
+                    .HasMaxLength(50);
+                entity.Property(e => e.Operation)
+                  .IsRequired()
+                  .HasMaxLength(10);
+                entity.Property(e => e.TableName)
+              .IsRequired()
+              .HasMaxLength(100);
+                entity.Property(e => e.NewValue)
+    .HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.OldValue)
+                .IsRequired(false)
+            .HasColumnType("NVARCHAR(MAX)");
+
+                entity.Property(e => e.CreatedAt)
+                .IsRequired(true)
+                .HasDefaultValueSql("GETDATE()");
+            });
             modelBuilder.Entity<IDT_API_KEY>(entity =>
             {
                 entity.ToTable("IDT_API_KEY");

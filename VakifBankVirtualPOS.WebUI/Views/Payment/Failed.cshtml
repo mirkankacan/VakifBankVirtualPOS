@@ -1,6 +1,7 @@
 ﻿@model VakifBankVirtualPOS.WebUI.Models.PaymentViewModels.PaymentResultViewModel
 @{
     ViewData["Title"] = "Ödeme Başarısız";
+    ViewData["NoIndex"] = true;
 }
 
 <div class="row">
@@ -43,7 +44,6 @@
                             </div>
                         </div>
                     }
-             
 
                     <div class="mt-4">
                         <a href="@Url.Action("Index", "Payment")" class="btn btn-egesehir">
