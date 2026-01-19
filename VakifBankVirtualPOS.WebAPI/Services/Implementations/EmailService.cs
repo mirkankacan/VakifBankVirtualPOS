@@ -1,10 +1,10 @@
-﻿using System.Globalization;
-using System.Net;
-using Humanizer;
+﻿using Humanizer;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
+using System.Globalization;
+using System.Net;
 using VakifBankVirtualPOS.WebAPI.Data.Context;
 using VakifBankVirtualPOS.WebAPI.Options;
 using VakifBankVirtualPOS.WebAPI.Services.Interfaces;
@@ -206,11 +206,11 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                 await client.SendAsync(message, cancellationToken);
                 await client.DisconnectAsync(true, cancellationToken);
 
-                _logger.LogInformation("E-posta gönderildi. Konu: {Subject}, Alıcı: {To}", subject, to);
+                _logger.LogInformation("E-posta gönderildi. Konu: {Subject}", subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "E-posta gönderilirken bir hata oluştu. Konu: {Subject}, Alıcı: {To}", subject, to);
+                _logger.LogError(ex, "E-posta gönderilirken bir hata oluştu. Konu: {Subject}", subject);
                 throw;
             }
         }

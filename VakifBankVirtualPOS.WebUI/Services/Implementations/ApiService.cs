@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using VakifBankVirtualPOS.WebUI.Common;
 using VakifBankVirtualPOS.WebUI.Options;
 using VakifBankVirtualPOS.WebUI.Services.Interfaces;
@@ -13,6 +14,7 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
         private readonly HttpClient _httpClient;
         private readonly ILogger<ApiService> _logger;
         private readonly ApiOptions _apiOptions;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -22,11 +24,12 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
-        public ApiService(HttpClient httpClient, ILogger<ApiService> logger, ApiOptions apiOptions)
+        public ApiService(HttpClient httpClient, ILogger<ApiService> logger, ApiOptions apiOptions, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _logger = logger;
             _apiOptions = apiOptions;
+            _httpContextAccessor = httpContextAccessor;
 
             // API Key'i her istekte otomatik olarak ekle
             _httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiOptions.ApiKey);
@@ -38,7 +41,11 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             {
                 _logger.LogInformation("GET isteği gönderiliyor: {Endpoint}", endpoint);
 
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse<T>(response, cancellationToken);
             }
             catch (Exception ex)
@@ -57,7 +64,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 var json = JsonSerializer.Serialize(data, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+                {
+                    Content = content
+                };
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse<T>(response, cancellationToken);
             }
             catch (Exception ex)
@@ -76,7 +90,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 var json = JsonSerializer.Serialize(data, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PutAsync(endpoint, content, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
+                {
+                    Content = content
+                };
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse<T>(response, cancellationToken);
             }
             catch (Exception ex)
@@ -92,7 +113,11 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             {
                 _logger.LogInformation("DELETE isteği gönderiliyor: {Endpoint}", endpoint);
 
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse<T>(response, cancellationToken);
             }
             catch (Exception ex)
@@ -112,7 +137,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 var json = JsonSerializer.Serialize(data, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+                {
+                    Content = content
+                };
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse(response, cancellationToken);
             }
             catch (Exception ex)
@@ -131,7 +163,14 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 var json = JsonSerializer.Serialize(data, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PutAsync(endpoint, content, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
+                {
+                    Content = content
+                };
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse(response, cancellationToken);
             }
             catch (Exception ex)
@@ -147,7 +186,11 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
             {
                 _logger.LogInformation("DELETE isteği gönderiliyor: {Endpoint}", endpoint);
 
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+                AddClientIpHeader(request);
+                AddUserAgentHeader(request);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return await HandleResponse(response, cancellationToken);
             }
             catch (Exception ex)
@@ -155,6 +198,60 @@ namespace VakifBankVirtualPOS.WebUI.Services.Implementations
                 _logger.LogError(ex, "DELETE isteği başarısız: {Endpoint}", endpoint);
                 return ApiResponse.Failure("İstek sırasında bir hata oluştu", HttpStatusCode.InternalServerError);
             }
+        }
+
+        /// <summary>
+        /// Client IP adresini alır ve X-Client-IP header'ına ekler
+        /// </summary>
+        private void AddClientIpHeader(HttpRequestMessage request)
+        {
+            var clientIp = GetClientIp();
+            if (!string.IsNullOrEmpty(clientIp))
+            {
+                request.Headers.Add("X-Client-IP", clientIp);
+            }
+        }
+
+        /// <summary>
+        /// User-Agent'ı alır ve X-User-Agent header'ına ekler
+        /// </summary>
+        private void AddUserAgentHeader(HttpRequestMessage request)
+        {
+            var userAgent = GetUserAgent();
+            if (!string.IsNullOrEmpty(userAgent))
+            {
+                request.Headers.Add("X-User-Agent", userAgent);
+            }
+        }
+
+        /// <summary>
+        /// HttpContext'ten client IP adresini alır
+        /// </summary>
+        private string? GetClientIp()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+                return null;
+
+            var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString();
+            return remoteIp;
+        }
+
+        /// <summary>
+        /// HttpContext'ten User-Agent'ı alır
+        /// </summary>
+        private string? GetUserAgent()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+                return null;
+
+            if (httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent))
+            {
+                return userAgent.ToString();
+            }
+
+            return null;
         }
 
         private async Task<ApiResponse<T>> HandleResponse<T>(HttpResponseMessage response, CancellationToken cancellationToken)

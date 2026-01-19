@@ -47,6 +47,7 @@ builder.Services.AddHttpClient<IApiService, ApiService>(client =>
 builder.Services.AddHttpClient();
 
 builder.Services.AddOptionsExtensions();
+builder.Services.AddHttpContextAccessor();
 
 // API Servisleri
 builder.Services.AddScoped<IPaymentApiService, PaymentApiService>();

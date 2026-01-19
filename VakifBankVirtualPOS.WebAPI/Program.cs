@@ -20,5 +20,17 @@ app.UseWebApiServices();
 app.MapHealthCheckServices();
 
 app.MapCarter();
+app.MapGet("/api/whats-my-ip", (HttpContext context) =>
+{
+    var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+    var xForwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+    var xRealIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
 
+    return new
+    {
+        RemoteIpAddress = remoteIp,
+        XForwardedFor = xForwardedFor,
+        XRealIP = xRealIp
+    };
+});
 app.Run();

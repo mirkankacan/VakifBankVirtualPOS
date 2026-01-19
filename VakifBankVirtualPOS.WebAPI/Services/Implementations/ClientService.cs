@@ -124,7 +124,6 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
                         $"{tcNumber} TC kimlik numaralı cari bulunamadı",
                         HttpStatusCode.NotFound);
                 }
-
                 return ServiceResult<ClientDto>.SuccessAsOk(client.Adapt<ClientDto>());
             }
             catch (Exception ex)
@@ -255,6 +254,6 @@ namespace VakifBankVirtualPOS.WebAPI.Services.Implementations
             }
         }
 
-        #endregion
+        #endregion Private Helper Methods
     }
 }
